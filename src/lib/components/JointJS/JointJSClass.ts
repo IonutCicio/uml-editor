@@ -1,4 +1,4 @@
-import { type IUMLClass, type UMLAttribute, type UMLOperation } from '$lib/types/uml';
+import { Multiplicity, type IUMLClass, type UMLAttribute, type UMLOperation } from '$lib/types/uml';
 import { getPerimeterPorts, graph, lengthToGridEven, textLength } from '$lib/utils';
 import { conf } from '$lib';
 import { get } from 'svelte/store';
@@ -23,9 +23,7 @@ function operationToString(operation: UMLOperation): string {
 export const JointJSClass = joint.dia.Element.define(
     'custom.JointJSClass',
     {
-        name: 'Class',
-        attributes: [],
-        operations: [],
+        definition: 'Class',
         attrs: {
             body: {
                 refWidth: '100%',
@@ -64,14 +62,37 @@ export const JointJSClass = joint.dia.Element.define(
         initialize: function(this: IUMLClass) {
             joint.dia.Element.prototype.initialize.apply(this, arguments as any);
             this.on("change:size change:attrs change:name change:attributes change:operations", this.update);
-            // this.on("all", this.update);
             this.update();
         },
 
         update: function(this: IUMLClass) {
-            const name = this.get("name");
-            const attributes: UMLAttribute[] = this.get("attributes");
-            const operations = this.get("operations");
+            const definition = this.get('definition');
+            const [name, _attributes, _operations]: string[] = definition.split('\n\n') || [];
+
+            let attributes: UMLAttribute[] = (_attributes || '')
+                .split('\n')
+                .filter((definition) => definition.length > 0)
+                .map((definition) => {
+                    return {
+                        name: definition,
+                        type: 'Type',
+                        multiplicityLower: 1,
+                        multiplicityUpper: 1,
+                        identifierEnabled: false,
+                    };
+                }) || [];
+
+            let operations: UMLOperation[] = (_operations || '')
+                .split('\n')
+                .filter((definition) => definition.length > 0)
+                .map((definition) => {
+                    return {
+                        name: definition,
+                        parameters: [],
+                        type: 'Type',
+                        multiplicity: new Multiplicity()
+                    };
+                }) || [];
 
             const attrs: Record<string, any> = {};
             const markup: string | joint.dia.MarkupJSON = [
@@ -95,8 +116,14 @@ export const JointJSClass = joint.dia.Element.define(
             let y = get(conf).gridSize * 2; // divider1
 
             attributes.forEach((attribute, index) => {
-                const multiplicityString = attribute.multiplicityLower === attribute.multiplicityUpper && attribute.multiplicityLower == 1 ? "" : ` [${attribute.multiplicityLower}..${attribute.multiplicityUpper}]`
-                const identifierString = attribute.identifierEnabled ? ` {id${attribute.identifierNumber ? attribute.identifierNumber : ""}}` : "";
+                const multiplicityString =
+                    attribute.multiplicityLower === attribute.multiplicityUpper && attribute.multiplicityLower == 1 ?
+                        "" :
+                        ` [${attribute.multiplicityLower}..${attribute.multiplicityUpper}]`
+                const identifierString =
+                    attribute.identifierEnabled ?
+                        ` {id${attribute.identifierNumber ? attribute.identifierNumber : ""}}`
+                        : "";
 
                 width = Math.max(width, lengthToGridEven(textLength(`${attribute.name}: ${attribute.type}${multiplicityString}${identifierString}`) + get(conf).gridSize));
 
@@ -158,27 +185,27 @@ export const JointJSClass = joint.dia.Element.define(
                 lengthToGridEven(y),
             );
 
-            for (const port of this.getPorts()) {
-                if (graph.getLinks().some((linkView) => {
-                    return linkView.get("source").port == port.id ||
-                        linkView.get("target").port == port.id
-                })) {
-
-                    if (port.type == "t" || port.type == "b") {
-                        width = Math.max(
-                            width,
-                            lengthToGridEven(port.args?.x as number)
-                        )
-                    }
-
-                    if (port.type == "l" || port.type == "r") {
-                        height = Math.max(
-                            height,
-                            lengthToGridEven(port.args?.y as number)
-                        )
-                    }
-                }
-            }
+            // for (const port of this.getPorts()) {
+            //     if (graph.getLinks().some((linkView) => {
+            //         return linkView.get("source").port == port.id ||
+            //             linkView.get("target").port == port.id
+            //     })) {
+            //
+            //         if (port.type == "t" || port.type == "b") {
+            //             width = Math.max(
+            //                 width,
+            //                 lengthToGridEven(port.args?.x as number)
+            //             )
+            //         }
+            //
+            //         if (port.type == "l" || port.type == "r") {
+            //             height = Math.max(
+            //                 height,
+            //                 lengthToGridEven(port.args?.y as number)
+            //             )
+            //         }
+            //     }
+            // }
 
             this.resize(width, height);
             this.attr(attrs);
@@ -187,3 +214,8 @@ export const JointJSClass = joint.dia.Element.define(
         }
     }
 );
+
+// content: '',
+// name: 'Class',
+// attributes: [],
+// operations: [],

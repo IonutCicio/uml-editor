@@ -112,7 +112,8 @@
 
         if (
             event.target instanceof HTMLElement &&
-            event.target.tagName.toLowerCase() == "input"
+            (event.target.tagName.toLowerCase() == "input" ||
+                event.target.tagName.toLowerCase() == "textarea")
         ) {
             return;
         }

@@ -13,7 +13,7 @@
         Folder,
         Download,
         Image,
-        Github,
+        // Github,
         CircleQuestionMark,
         SquareCenterlineDashedVertical,
         SquareDashed,
@@ -146,10 +146,10 @@
     <History />
     <hr class="h-5 w-0 border-l" />
     <a
-        href="https://github.com/IonutCicio/logic-flows"
+        href="https://github.com/IonutCicio/uml-editor"
         class="w-10 grid place-items-center"
     >
-        <Github size={16} />
+        <!-- <Github size={16} /> -->
     </a>
     <CircleQuestionMark size={16} />
 </div>

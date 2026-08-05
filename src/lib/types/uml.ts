@@ -5,9 +5,10 @@ import * as joint from "@joint/core";
 export interface IUMLClass extends joint.dia.Element {
     update(): void;
 
-    get(key: "name"): string;
-    get(key: "attributes"): UMLAttribute[];
-    get(key: "operations"): UMLOperation[];
+    get(key: "definition"): string;
+    // get(key: "name"): string;
+    // get(key: "attributes"): UMLAttribute[];
+    // get(key: "operations"): UMLOperation[];
 }
 
 export interface IUMLLink extends joint.dia.Link {
