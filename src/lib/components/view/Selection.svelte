@@ -224,6 +224,18 @@
     onkeydown={function (event: KeyboardEvent) {
         manualSelectionMode = event.shiftKey || event.ctrlKey;
 
+        // temporary fix, there might be a better alternative
+        const target = event.target as HTMLElement;
+
+        const isEditing =
+            target instanceof HTMLInputElement ||
+            target instanceof HTMLTextAreaElement ||
+            target.isContentEditable;
+
+        if (isEditing) {
+            return;
+        }
+
         if (event.key == "Escape") {
             selectedCellViews = [];
         }

@@ -6,7 +6,7 @@ import * as joint from '@joint/core';
 
 function operationToString(operation: UMLOperation): string {
     const paramsStr = operation.parameters
-        ?.map((param) => `${param.name}: ${param.type} `)
+        ?.map((param) => `${param.name}: ${param.type}`)
         .join(", ");
 
     const paramsPart = paramsStr ? `(${paramsStr})` : "()";
@@ -70,25 +70,56 @@ export const JointJSClass = joint.dia.Element.define(
                 .split('\n')
                 .filter((definition) => definition.length > 0)
                 .map((definition) => {
+                    const match = /(\w+):\s(\w+)(?:\s(\{id\d*\}))?/.exec(definition)
+
+                    if (!match) {
+                        return {
+                            name: "Unknown",
+                            type: "Type",
+                            multiplicityLower: 1,
+                            multiplicityUpper: 1,
+                            identifierEnabled: false,
+                        }
+                    }
+
                     return {
-                        name: definition,
-                        type: 'Type',
+                        name: match[1],
+                        type: match[2],
                         multiplicityLower: 1,
                         multiplicityUpper: 1,
-                        identifierEnabled: false,
-                    };
+                        identifierEnabled: !!match[3],
+                    }
                 }) || [];
 
             let operations: UMLOperation[] = (_operations || '')
                 .split('\n')
                 .filter((definition) => definition.length > 0)
                 .map((definition) => {
+                    const match = /(\w+)\((.*?)\):\s(\w+)/.exec(definition)
+
+                    if (!match) {
+                        return {
+                            name: "Unknown",
+                            parameters: [],
+                            type: 'Type',
+                            multiplicity: new Multiplicity()
+                        }
+                    }
+
+                    const parametersArr = match[2].split(",").map((value) => {
+                        const [name, type] = value.split(":")
+                        return {
+                            name: name.trim(),
+                            type: type.trim(),
+                        }
+                    })
+
                     return {
-                        name: definition,
-                        parameters: [],
-                        type: 'Type',
+                        name: match[1],
+                        parameters: parametersArr,
+                        type: match[3],
                         multiplicity: new Multiplicity()
-                    };
+                    }
                 }) || [];
 
             const attrs: Record<string, any> = {};
