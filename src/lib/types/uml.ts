@@ -19,6 +19,10 @@ export interface IUMLLink extends joint.dia.Link {
     get(key: "targetMultiplicity"): string;
 }
 
+// TODO: No IUMLStuff... maybe?
+// Just a big ass UMLClass(definition) <- this is a string! and "could possibly return a class"
+// And, also, we could have something like .toString() for operations, or stuff like that...
+
 export class Multiplicity {
     private _lower: number = 1;
     private _upper: number | "*" = 1;
@@ -163,3 +167,27 @@ export interface UMLOperation {
     type: string;
     multiplicity: Multiplicity;
 }
+
+// import type { UMLAttributeData } from "./uml";
+//
+// export const isStringArray = (value: any): value is string[] => {
+//     return (
+//         Array.isArray(value) && value.every((item) => typeof item === "string")
+//     );
+// };
+//
+// export function isUMLAttribute(value: unknown): value is UMLAttributeData {
+//     return (
+//         value != null &&
+//         typeof value === "object" &&
+//         "name" in value &&
+//         typeof (value as any).name === "string" &&
+//         "type" in value &&
+//         typeof (value as any).type === "string" &&
+//         (!("multiplicity" in value) ||
+//             typeof (value as any).multiplicity === "string" ||
+//             (value as any).multiplicity == null) &&
+//         "isIdentifier" in value &&
+//         typeof (value as any).isIdentifier === "boolean"
+//     );
+// }

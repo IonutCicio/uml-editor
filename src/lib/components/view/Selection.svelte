@@ -223,6 +223,22 @@
 <svelte:window
     onkeydown={function (event: KeyboardEvent) {
         manualSelectionMode = event.shiftKey || event.ctrlKey;
+
+        if (event.key == "Escape") {
+            selectedCellViews = [];
+        }
+
+        if (event.key == "Backspace" || event.key == "Delete") {
+            $pauseGraphToJSON = true;
+            for (const cellView of selectedCellViews) {
+                cellView.model.remove();
+            }
+            selectedCellViews = [];
+            $pauseGraphToJSON = false;
+            graph.trigger("change");
+
+            return;
+        }
     }}
     onkeyup={function (_event: KeyboardEvent) {
         manualSelectionMode = false;

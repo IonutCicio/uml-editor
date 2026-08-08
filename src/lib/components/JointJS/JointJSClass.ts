@@ -1,5 +1,5 @@
 import { Multiplicity, type IUMLClass, type UMLAttribute, type UMLOperation } from '$lib/types/uml';
-import { getPerimeterPorts, graph, lengthToGridEven, textLength } from '$lib/utils';
+import { graph, lengthToGridEven, textLength } from '$lib/utils';
 import { conf } from '$lib';
 import { get } from 'svelte/store';
 import * as joint from '@joint/core';
@@ -41,15 +41,14 @@ export const JointJSClass = joint.dia.Element.define(
                 fontSize: get(conf).fontSize,
             },
             divider1: {
-                x1: 0, x2: 'calc(w)', y1: get(conf).gridSize * 2, y2: get(conf).gridSize * 2,
-                stroke: 'black',
-                strokeWidth: 1,
+                x1: 0,
+                x2: 'calc(w)',
+                y1: get(conf).gridSize * 2,
+                y2: get(conf).gridSize * 2,
             },
             divider2: {
                 x1: 0,
                 x2: 'calc(w)',
-                stroke: 'black',
-                strokeWidth: 1,
             }
         },
         ports: {
@@ -58,13 +57,11 @@ export const JointJSClass = joint.dia.Element.define(
     },
     {
         markup: [],
-
         initialize: function(this: IUMLClass) {
             joint.dia.Element.prototype.initialize.apply(this, arguments as any);
             this.on("change:size change:attrs change:name change:attributes change:operations", this.update);
             this.update();
         },
-
         update: function(this: IUMLClass) {
             const definition = this.get('definition');
             const [name, _attributes, _operations]: string[] = definition.split('\n\n') || [];
@@ -185,35 +182,40 @@ export const JointJSClass = joint.dia.Element.define(
                 lengthToGridEven(y),
             );
 
-            // for (const port of this.getPorts()) {
-            //     if (graph.getLinks().some((linkView) => {
-            //         return linkView.get("source").port == port.id ||
-            //             linkView.get("target").port == port.id
-            //     })) {
-            //
-            //         if (port.type == "t" || port.type == "b") {
-            //             width = Math.max(
-            //                 width,
-            //                 lengthToGridEven(port.args?.x as number)
-            //             )
-            //         }
-            //
-            //         if (port.type == "l" || port.type == "r") {
-            //             height = Math.max(
-            //                 height,
-            //                 lengthToGridEven(port.args?.y as number)
-            //             )
-            //         }
-            //     }
-            // }
-
             this.resize(width, height);
             this.attr(attrs);
-            this.set('ports', { items: getPerimeterPorts(width, height, this.id) })
             this.set('markup', markup)
         }
     }
 );
+
+
+
+
+
+// { silent: true }
+// this.set('ports', { items: getPerimeterPorts(width, height, this.id) })
+// for (const port of this.getPorts()) {
+//     if (graph.getLinks().some((linkView) => {
+//         return linkView.get("source").port == port.id ||
+//             linkView.get("target").port == port.id
+//     })) {
+//
+//         if (port.type == "t" || port.type == "b") {
+//             width = Math.max(
+//                 width,
+//                 lengthToGridEven(port.args?.x as number)
+//             )
+//         }
+//
+//         if (port.type == "l" || port.type == "r") {
+//             height = Math.max(
+//                 height,
+//                 lengthToGridEven(port.args?.y as number)
+//             )
+//         }
+//     }
+// }
 
 // content: '',
 // name: 'Class',

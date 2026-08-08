@@ -5,7 +5,7 @@
 
     const HISTORY_SIZE: number = 20;
 
-    let history: string[] = new Array(HISTORY_SIZE);
+    let history: any[] = new Array(HISTORY_SIZE);
     let history_length: number = $state(0);
     let history_index: number = $state(-1);
 
@@ -13,6 +13,7 @@
         history_index++;
         history_length++;
 
+        // TODO: WAIT A MINUTE! Why use toJSON when you can clone the object itself, and just assign it?
         const diagramJSON = localStorage.getItem("diagram");
         if (diagramJSON) {
             history[history_index] = JSON.parse(diagramJSON);

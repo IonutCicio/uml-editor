@@ -56,9 +56,8 @@ export const paper: joint.dia.Paper = new joint.dia.Paper({
     defaultRouter: {
         name: "manhattan",
         args: {
-            // maximumLoops: 500
+            padding: 20,
         }
-        // args: {},
     },
     interactive: {
         labelMove: true,
@@ -85,50 +84,12 @@ export enum EditorMode {
     Link,
     InstanceOf, // dashed line with arrow and "<<instance>>" stereotype
 
-    // UML 
+    // UML Use Case Diagram
     Actor,
     UseCase,
 
     // Extra
     Note
-}
-
-export function getPerimeterPorts(width: number, height: number, id: joint.dia.Cell.ID) {
-    let ports = []
-
-    let portSerialId = 0
-    for (let x = 0; x <= width; x += get(conf).gridSize) {
-        portSerialId++;
-        ports.push({ id: `${id}-port-t-${portSerialId} `, args: { x, y: 0 }, type: 't' })
-        ports.push({ id: `${id}-port-b-${portSerialId} `, args: { x, y: height }, type: 'b' })
-    }
-
-    portSerialId = 0;
-    for (let y = get(conf).gridSize; y < height; y += get(conf).gridSize) {
-        portSerialId++;
-        ports.push({ id: `${id}-port-l-${portSerialId} `, args: { x: 0, y }, type: 'l' })
-        ports.push({ id: `${id}-port-r-${portSerialId} `, args: { x: width, y }, type: 'r' })
-    }
-
-    return ports.map((port) => {
-        return {
-            attrs: {
-                body: {
-                    magnet: true,
-                    r: get(conf).gridSize / 2,
-                    fill: 'transparent',
-                    strokeWidth: 2,
-                }
-            },
-            markup: [
-                {
-                    tagName: 'circle',
-                    selector: 'body'
-                },
-            ],
-            ...port
-        }
-    });
 }
 
 export function darkenHSL(hslString: string, amount = 20): string {
@@ -238,6 +199,18 @@ export function lengthToGridEven(length: number): number {
     return Math.ceil(length / (get(conf).gridSize * 2)) * get(conf).gridSize * 2
 }
 
+export function lengthToGrid(length: number): number {
+    const leftSnap = Math.floor(length / get(conf).gridSize) * get(conf).gridSize
+    const rightSnap = Math.ceil(length / get(conf).gridSize) * get(conf).gridSize
+
+    if (length - leftSnap < length - rightSnap) {
+        return leftSnap;
+    }
+    return rightSnap;
+}
+
+// return Math.ceil(length / get(conf).gridSize) * get(conf).gridSize
+
 const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
 const textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
 svg.appendChild(textElement);
@@ -285,44 +258,6 @@ export function exportSVG() {
 
     URL.revokeObjectURL(url);
 }
-
-// function svgToPNG(svgString, width, height) {
-//     return new Promise((resolve) => {
-//         const img = new Image();
-//         const blob = new Blob([svgString], { type: "image/svg+xml" });
-//         const url = URL.createObjectURL(blob);
-//
-//         img.onload = function() {
-//             const canvas = document.createElement("canvas");
-//             canvas.width = width;
-//             canvas.height = height;
-//
-//             const ctx = canvas.getContext("2d");
-//             ctx.drawImage(img, 0, 0);
-//
-//             URL.revokeObjectURL(url);
-//             resolve(canvas);
-//         };
-//
-//         img.src = url;
-//     });
-// }
-//
-// const canvas = await svgToPNG(svgString, 1000, 800);
-// const pngDataUrl = canvas.toDataURL("image/png");
-//
-// async function copyCanvasToClipboard(canvas) {
-//     return new Promise((resolve) => {
-//         canvas.toBlob(async (blob) => {
-//             await navigator.clipboard.write([
-//                 new ClipboardItem({
-//                     "image/png": blob
-//                 })
-//             ]);
-//             resolve();
-//         });
-//     });
-// }
 
 export function exportJSON() {
     const url = URL.createObjectURL(
@@ -394,3 +329,103 @@ function outside(
         },
     };
 }
+
+
+// startDirections: ['top', 'bottom', 'left', 'right'],
+// endDirections: ['top', 'bottom', 'left', 'right']
+// maximumLoops: 500
+// args: {},
+// defaultAnchor: {
+//     name: 'perimeterGrid',
+//     args: { gridSize: 10 }
+// }
+// defaultAnchor: function(endView, endMagnet, refPoint, anchorOptions) {
+//     const bbox = endView.getNodeBBox(endMagnet);
+//     const gridSize = 10; // Your perimeter grid size
+//
+//     // Find closest point on rectangle boundary aligned to gridSize
+//     // const closestOnPerimeter = bbox.pointNearestToPoint(refPoint);
+//     const closestOnPerimeter = { x: 10, y: 10 }
+//
+//     return new joint.g.Point(
+//         Math.round(closestOnPerimeter.x / gridSize) * gridSize,
+//         Math.round(closestOnPerimeter.y / gridSize) * gridSize
+//     );
+// }
+// export function getPerimeterPorts(width: number, height: number, id: joint.dia.Cell.ID) {
+//     let ports = []
+//
+//     let portSerialId = 0
+//     for (let x = 0; x <= width; x += get(conf).gridSize) {
+//         portSerialId++;
+//         ports.push({ id: `${id}-port-t-${portSerialId} `, args: { x, y: 0 }, type: 't' })
+//         ports.push({ id: `${id}-port-b-${portSerialId} `, args: { x, y: height }, type: 'b' })
+//     }
+//
+//     portSerialId = 0;
+//     for (let y = get(conf).gridSize; y < height; y += get(conf).gridSize) {
+//         portSerialId++;
+//         ports.push({ id: `${id}-port-l-${portSerialId} `, args: { x: 0, y }, type: 'l' })
+//         ports.push({ id: `${id}-port-r-${portSerialId} `, args: { x: width, y }, type: 'r' })
+//     }
+//
+//     return ports.map((port) => {
+//         return {
+//             attrs: {
+//                 body: {
+//                     magnet: true,
+//                     r: get(conf).gridSize / 2,
+//                     fill: 'transparent',
+//                     strokeWidth: 2,
+//                 }
+//             },
+//             markup: [
+//                 {
+//                     tagName: 'circle',
+//                     selector: 'body'
+//                 },
+//             ],
+//             ...port
+//         }
+//     });
+// }
+
+
+// function svgToPNG(svgString, width, height) {
+//     return new Promise((resolve) => {
+//         const img = new Image();
+//         const blob = new Blob([svgString], { type: "image/svg+xml" });
+//         const url = URL.createObjectURL(blob);
+//
+//         img.onload = function() {
+//             const canvas = document.createElement("canvas");
+//             canvas.width = width;
+//             canvas.height = height;
+//
+//             const ctx = canvas.getContext("2d");
+//             ctx.drawImage(img, 0, 0);
+//
+//             URL.revokeObjectURL(url);
+//             resolve(canvas);
+//         };
+//
+//         img.src = url;
+//     });
+// }
+//
+// const canvas = await svgToPNG(svgString, 1000, 800);
+// const pngDataUrl = canvas.toDataURL("image/png");
+//
+// async function copyCanvasToClipboard(canvas) {
+//     return new Promise((resolve) => {
+//         canvas.toBlob(async (blob) => {
+//             await navigator.clipboard.write([
+//                 new ClipboardItem({
+//                     "image/png": blob
+//                 })
+//             ]);
+//             resolve();
+//         });
+//     });
+// }
+
