@@ -123,7 +123,6 @@ You can preview the production build with `npm run preview`.
     6. [ ] The smaller the zoom gets, the worse the panning becomes (it's all jittery) 
     7. [x] When moving multiple selected elements, it gets slow
 
-
 TODO:
 - reduce minimum zoom to 40
 - dashed line
@@ -133,3 +132,8 @@ TODO:
 - link
 - instanceOf
 - 2 toolbar lines: one for objects-like things, one for link-like things... nah
+- global "list of warnings" always visible, or at least you can open, with a
+  small number of warnings, to show the errors.
+    - this is made because we don't want the editor to fail if there is some
+      naive mistake, but we still want to show CLEAR indications of problems, if any (possibly, not directly on the diagram?)
+- allow having multiple diagrams open! (localStorage by default limits to only one!)

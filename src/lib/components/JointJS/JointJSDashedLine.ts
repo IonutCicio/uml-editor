@@ -2,7 +2,7 @@ import type { IUMLLink } from "$lib/types/uml";
 import { conf } from "$lib";
 import { get } from "svelte/store";
 import * as joint from "@joint/core";
-import { lengthToGridEven, textLength } from "$lib/utils";
+import { lengthToGridEven, computeTextLength } from "$lib/utils";
 
 export const JointJSDashedLine = joint.dia.Link.define(
     "custom.JointJSDashedLine",
@@ -67,7 +67,7 @@ export const JointJSDashedLine = joint.dia.Link.define(
 
         update: function(this: IUMLLink) {
             const name = this.get("name") || "link";
-            const nameLabelLength = lengthToGridEven(textLength(name));
+            const nameLabelLength = lengthToGridEven(computeTextLength(name));
 
             this.label(0, {
                 attrs: {

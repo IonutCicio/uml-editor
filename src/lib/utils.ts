@@ -195,19 +195,34 @@ export function getBorderColor(color: string): string {
 }
 
 
-export function lengthToGridEven(length: number): number {
-    return Math.ceil(length / (get(conf).gridSize * 2)) * get(conf).gridSize * 2
+// TODO: basically make such a method, but you have to specify the rounding method, the gridsize (not take it from conf)
+// And it can be something like "snapToGrid(point, gridSize, Math.ceil)"
+export function snapSize(size: number, gridSize: number, roundingFunction: (n: number) => number): number {
+    return roundingFunction(size / gridSize) * gridSize;
 }
 
-export function lengthToGrid(length: number): number {
-    const leftSnap = Math.floor(length / get(conf).gridSize) * get(conf).gridSize
-    const rightSnap = Math.ceil(length / get(conf).gridSize) * get(conf).gridSize
+export function snapSizeToClosest(size: number): number {
+    const floorSnap = snapSize(size, get(conf).gridSize, Math.floor);
+    const ceilSnap = snapSize(size, get(conf).gridSize, Math.ceil);
 
-    if (length - leftSnap < length - rightSnap) {
-        return leftSnap;
+    if (size - floorSnap < ceilSnap - size) {
+        return floorSnap;
     }
-    return rightSnap;
+
+    return ceilSnap;
 }
+
+export function lengthToGridEven(size: number): number {
+    return snapSize(size, get(conf).gridSize, Math.ceil);
+}
+
+
+// export function lengthToGridEven(length: number): number {
+//     return Math.ceil(length / (get(conf).gridSize * 2)) * get(conf).gridSize * 2
+// }
+
+// Math.floor(size / get(conf).gridSize) * get(conf).gridSize
+// Math.ceil(size / get(conf).gridSize) * get(conf).gridSize
 
 // return Math.ceil(length / get(conf).gridSize) * get(conf).gridSize
 
@@ -220,7 +235,7 @@ textElement.setAttribute("font-family", "Cascadia Code");
 textElement.setAttribute("font-size", `${get(conf).fontSize}px`);
 document.body.appendChild(svg);
 
-export function textLength(text: string) {
+export function computeTextLength(text: string) {
     textElement.textContent = text;
     return textElement.getBBox().width;
 }

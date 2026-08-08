@@ -1,6 +1,22 @@
 import type { IUMLClass, IUMLLink } from "$lib/types/uml";
 import * as joint from "@joint/core";
 
+// export function isUMLAttribute(value: unknown): value is UMLAttributeData {
+//     return (
+//         value != null &&
+//         typeof value === "object" &&
+//         "name" in value &&
+//         typeof (value as any).name === "string" &&
+//         "type" in value &&
+//         typeof (value as any).type === "string" &&
+//         (!("multiplicity" in value) ||
+//             typeof (value as any).multiplicity === "string" ||
+//             (value as any).multiplicity == null) &&
+//         "isIdentifier" in value &&
+//         typeof (value as any).isIdentifier === "boolean"
+//     );
+// }
+
 export const areAttributesNameValid = (classElement: IUMLClass) => {
     const attributes = classElement.get("attributes");
     const nameMap: Record<string, number> = {};

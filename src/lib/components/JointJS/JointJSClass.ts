@@ -1,24 +1,8 @@
-import { Multiplicity, type IUMLClass, type UMLAttribute, type UMLOperation } from '$lib/types/uml';
-import { graph, lengthToGridEven, textLength } from '$lib/utils';
-import { conf } from '$lib';
+import { type IUMLClass, } from '$lib/types/uml';
+import { graph, snapSize, computeTextLength } from '$lib/utils';
+import { Attribute, conf, UMLClass } from '$lib';
 import { get } from 'svelte/store';
 import * as joint from '@joint/core';
-
-function operationToString(operation: UMLOperation): string {
-    const paramsStr = operation.parameters
-        ?.map((param) => `${param.name}: ${param.type}`)
-        .join(", ");
-
-    const paramsPart = paramsStr ? `(${paramsStr})` : "()";
-
-    let result = `${operation.name}${paramsPart} `;
-
-    if (operation.type) {
-        result += `: ${operation.type} `;
-    }
-
-    return result.trim();
-}
 
 export const JointJSClass = joint.dia.Element.define(
     'custom.JointJSClass',
@@ -40,133 +24,80 @@ export const JointJSClass = joint.dia.Element.define(
                 style: 'font-weight: 400 !important',
                 fontSize: get(conf).fontSize,
             },
-            divider1: {
-                x1: 0,
-                x2: 'calc(w)',
-                y1: get(conf).gridSize * 2,
-                y2: get(conf).gridSize * 2,
-            },
-            divider2: {
-                x1: 0,
-                x2: 'calc(w)',
-            }
+            divider1: { x1: 0, x2: 'calc(w)' },
+            divider2: { x1: 0, x2: 'calc(w)' }
         },
-        ports: {
-            items: []
-        }
     },
     {
         markup: [],
+
         initialize: function(this: IUMLClass) {
             joint.dia.Element.prototype.initialize.apply(this, arguments as any);
             this.on("change:size change:attrs change:name change:attributes change:operations", this.update);
             this.update();
         },
+
         update: function(this: IUMLClass) {
-            const definition = this.get('definition');
-            const [name, _attributes, _operations]: string[] = definition.split('\n\n') || [];
-
-            let attributes: UMLAttribute[] = (_attributes || '')
-                .split('\n')
-                .filter((definition) => definition.length > 0)
-                .map((definition) => {
-                    const match = /(\w+):\s(\w+)(?:\s(\{id\d*\}))?/.exec(definition)
-
-                    if (!match) {
-                        return {
-                            name: "Unknown",
-                            type: "Type",
-                            multiplicityLower: 1,
-                            multiplicityUpper: 1,
-                            identifierEnabled: false,
-                        }
-                    }
-
-                    return {
-                        name: match[1],
-                        type: match[2],
-                        multiplicityLower: 1,
-                        multiplicityUpper: 1,
-                        identifierEnabled: !!match[3],
-                    }
-                }) || [];
-
-            let operations: UMLOperation[] = (_operations || '')
-                .split('\n')
-                .filter((definition) => definition.length > 0)
-                .map((definition) => {
-                    const match = /(\w+)\((.*?)\):\s(\w+)/.exec(definition)
-
-                    if (!match) {
-                        return {
-                            name: "Unknown",
-                            parameters: [],
-                            type: 'Type',
-                            multiplicity: new Multiplicity()
-                        }
-                    }
-
-                    const parametersArr = match[2].split(",").map((value) => {
-                        const [name, type] = value.split(":")
-                        return {
-                            name: name.trim(),
-                            type: type.trim(),
-                        }
-                    })
-
-                    return {
-                        name: match[1],
-                        parameters: parametersArr,
-                        type: match[3],
-                        multiplicity: new Multiplicity()
-                    }
-                }) || [];
+            const umlClassResult = UMLClass.fromString(this.get('definition'));
+            const umlClass = umlClassResult.value;
 
             const attrs: Record<string, any> = {};
-            const markup: string | joint.dia.MarkupJSON = [
+            const markup: joint.dia.MarkupJSON = [
                 { tagName: "rect", selector: "body" },
                 { tagName: "text", selector: `name` },
                 { tagName: "line", selector: `divider1` },
                 { tagName: "line", selector: `divider2` },
             ];
 
-            attrs["name"] = { text: name };
+            let minWidth = this.size().width;
+            let currentY = 0;
 
-            const bodyStroke = this.attr('body/stroke');
+            minWidth = Math.max(minWidth, computeTextLength(umlClass.name) + get(conf).gridSize)
+            attrs["name"] = { text: umlClass.name };
 
+            currentY += get(conf).gridSize * 2;
             attrs["divider1"] = {
-                stroke: bodyStroke,
-                visibility:
-                    attributes.length > 0 || operations.length > 0 ? "visible" : "hidden",
+                y1: currentY,
+                y2: currentY,
+                stroke: this.attr('body/stroke'),
+                visibility: umlClass.attributes.length > 0 || umlClass.operations.length > 0 ? "visible" : "hidden",
             };
 
-            let width = lengthToGridEven(textLength(name) + get(conf).gridSize)
-            let y = get(conf).gridSize * 2; // divider1
 
-            attributes.forEach((attribute, index) => {
-                const multiplicityString =
-                    attribute.multiplicityLower === attribute.multiplicityUpper && attribute.multiplicityLower == 1 ?
-                        "" :
-                        ` [${attribute.multiplicityLower}..${attribute.multiplicityUpper}]`
-                const identifierString =
-                    attribute.identifierEnabled ?
-                        ` {id${attribute.identifierNumber ? attribute.identifierNumber : ""}}`
-                        : "";
+            umlClass.attributes.forEach((attribute, index) => {
+                minWidth = Math.max(minWidth, computeTextLength(attribute.value.toString()) + get(conf).gridSize);
 
-                width = Math.max(width, lengthToGridEven(textLength(`${attribute.name}: ${attribute.type}${multiplicityString}${identifierString}`) + get(conf).gridSize));
-
-                const text = {
-                    y: y + get(conf).gridSize,
+                const textAttrs = {
+                    y: currentY + get(conf).gridSize,
                     fontSize: get(conf).fontSize,
                     textVerticalAnchor: "middle",
                     fill: 'black'
                 }
 
-                attrs[`attribute-${index}`] = { x: get(conf).gridSize / 2, ...text };
-                attrs[`attribute-name-${index}`] = { text: `${attribute.name}: `, ...text };
-                attrs[`attribute-type-${index}`] = { text: attribute.type, fontWeight: "normal", ...text };
-                attrs[`attribute-multiplicity-${index}`] = { text: multiplicityString, ...text }
-                attrs[`attribute-id-${index}`] = { text: identifierString, fontStyle: "italic", ...text }
+                if (!(attribute.value instanceof Attribute)) {
+                    attrs[`attribute-${index}`] = { x: get(conf).gridSize / 2, ...textAttrs };
+                    attrs[`attribute-text-${index}`] = { text: attribute.value, ...textAttrs, fill: 'red' };
+
+                    markup.push({
+                        tagName: "text",
+                        selector: `attribute-${index}`,
+                        children: [
+                            { tagName: "tspan", selector: `attribute-text-${index}` },
+                        ]
+                    });
+
+                    currentY += get(conf).gridSize * 2;
+                    return
+                }
+
+                console.log(`${attribute.value}`)
+
+                attrs[`attribute-${index}`] = { x: get(conf).gridSize / 2, ...textAttrs };
+                attrs[`attribute-name-${index}`] = { text: attribute.value.name, ...textAttrs };
+                attrs[`attribute-type-${index}`] = { text: attribute.value.type ? `: ${attribute.value.type}` : "", fontWeight: "normal", ...textAttrs };
+                attrs[`attribute-multiplicity-${index}`] = { text: attribute.value.multiplicity.toString(), ...textAttrs }
+                attrs[`attribute-id-${index}`] = { text: (attribute.value.identifier || "").toString(), fontStyle: "italic", ...textAttrs }
+
                 markup.push({
                     tagName: "text",
                     selector: `attribute-${index}`,
@@ -178,50 +109,67 @@ export const JointJSClass = joint.dia.Element.define(
                     ]
                 });
 
-                y += get(conf).gridSize * 2;
-
+                currentY += get(conf).gridSize * 2;
             });
 
             attrs["divider2"] = {
-                stroke: bodyStroke,
-                y1: y,
-                y2: y,
-                visibility:
-                    attributes.length > 0 && operations.length > 0 ? "visible" : "hidden",
+                stroke: this.attr('body/stroke'),
+                y1: currentY,
+                y2: currentY,
+                visibility: umlClass.attributes.length > 0 && umlClass.operations.length > 0 ? "visible" : "hidden",
             };
 
-            operations.forEach((op, index) => {
-                const text = operationToString(op);
-                width = Math.max(width, lengthToGridEven(textLength(text) + get(conf).gridSize));
+            umlClass.operations.forEach((op, index) => {
+                const text = op.toString();
+                minWidth = Math.max(minWidth, computeTextLength(text) + get(conf).gridSize);
 
-                attrs[`operation${index} `] = {
+                // TODO: make it more detailed, for [ ] too, and for () and for : (like operations and like that)
+                // TODO: handle each parameter
+                attrs[`operation-${index} `] = {
                     text: text,
                     x: get(conf).gridSize / 2,
-                    y: y + get(conf).gridSize,
+                    y: currentY + get(conf).gridSize,
                     textAnchor: "left",
                     textVerticalAnchor: "middle",
                     fontSize: get(conf).fontSize,
                 };
-                markup.push({ tagName: "text", selector: `operation${index} ` });
+                attrs[`operation-name-${index}`] = {}
+                attrs[`operation-type-${index}`] = {}
+                attrs[`operation-multiplicity-${index}`] = {}
+                markup.push({
+                    tagName: "text",
+                    selector: `operation-${index}`,
+                    children: [
+                        { tagName: "tspan", selector: `operation-name-${index}` },
+                        { tagName: "tspan", selector: `operation-type-${index}` },
+                        { tagName: "tspan", selector: `operation-multiplicity-${index}` }
+                    ]
+                });
 
-                y += get(conf).gridSize * 2;
+                currentY += get(conf).gridSize * 2;
             });
 
-            width = Math.max(lengthToGridEven(this.size().width), width);
-            let height = Math.max(
-                lengthToGridEven(this.size().height),
-                lengthToGridEven(y),
-            );
+            // TODO: get the anchors attached to this object, and take the minium of those heights / widths (dy, dx)...
 
-            this.resize(width, height);
+            this.resize(
+                snapSize(minWidth, get(conf).gridSize * 2, Math.ceil),
+                snapSize(Math.max(currentY, this.size().height), get(conf).gridSize * 2, Math.ceil)
+            );
             this.attr(attrs);
             this.set('markup', markup)
         }
     }
 );
 
+// stroke: 'black',
+// fill: 'white',
 
+// stroke: 'hsl(0, 0%, 0%)',
+// fill: 'hsl(0, 0%, 100%)',
 
+// ports: {
+//     items: []
+// }
 
 
 // { silent: true }
