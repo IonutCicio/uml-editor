@@ -21,17 +21,18 @@
     import { JointJSActor } from "./JointJS/JointJSActor";
     import { JointJSUseCase } from "./JointJS/JointJSUseCase";
     import { JointJSObject } from "./JointJS/JointJSObject";
+    import Linking from "./view/Linking.svelte";
 
     let paperElement: HTMLElement;
 
     let mouseButton: number = $state(0);
     let localMousePoint: joint.g.Point = new joint.g.Point(0, 0);
 
-    let editorMode: EditorMode = $state(EditorMode.Panning);
+    let editorMode: EditorMode = $state(EditorMode.Selection);
 
     let copiedViews: joint.dia.CellView[] = [];
     let selectedCellViews: joint.dia.CellView[] = $state([]);
-    let inspectedCellView: joint.dia.CellView | null = $state(null);
+    let inspectedCellView: joint.dia.CellView | undefined = $state(undefined);
 
     onMount(() => {
         paper.setElement(paperElement);
@@ -105,13 +106,14 @@
         }
 
         if (event.key == "Escape") {
-            inspectedCellView = null;
+            inspectedCellView = undefined;
         }
 
         if (
             event.target instanceof HTMLElement &&
-            (event.target.tagName.toLowerCase() == "input" ||
-                event.target.tagName.toLowerCase() == "textarea")
+            (event.target.tagName === "INPUT" ||
+                event.target.tagName === "TEXTAREA" ||
+                event.target.isContentEditable)
         ) {
             return;
         }
@@ -175,6 +177,7 @@
 
 <Selection bind:selectedCellViews bind:editorMode bind:mouseButton />
 <Panning bind:editorMode bind:mouseButton />
+<Linking />
 
 <div class="relative flex flex-col w-full h-screen overflow-hidden">
     <Toolbar bind:editorMode />
@@ -184,7 +187,7 @@
     </div>
 </div>
 
-{#if inspectedCellView !== null}
+{#if inspectedCellView}
     <div
         class="absolute top-0 left-0 w-full h-full bg-black/20 grid place-items-center"
         role="dialog"
@@ -192,7 +195,7 @@
     >
         <div
             class="bg-white rounded-md p-4"
-            use:clickOutside={(e) => (inspectedCellView = null)}
+            use:clickOutside={(e) => (inspectedCellView = undefined)}
         >
             {#if inspectedCellView.model instanceof JointJSClass}
                 <ClassInspector component={inspectedCellView.model} />

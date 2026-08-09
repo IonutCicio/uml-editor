@@ -12,28 +12,6 @@ export type Result<T, E> = {
 };
 
 
-// TODO: some kind of reference? like... Class -> definition -> line 3 -> col 12? Also add line numbers in textarea for definition;
-
-
-// TODO: What do I want here? I want it to still work somehow... so "do it"
-// But I have to add erors, and reference the thing that created the error.
-// Ah, yeah! if it is an error, then just show the normal string!
-// And maybe a reference to the object id (which is generic and passed in from the tryFrom) Maybe optional?
-// The identifier is something like : "object id" + extra annotation on line and column?
-// TODO: there is no need to pass the id! You can just get the list of errors!
-// Then, the caller decides what to do with it!
-
-// editor
-// config
-
-// I can return either class or no class
-// I can either errors or no errors
-// Like, I could return the class, with the list of warnings.
-
-// TODO: after the tryFrom, map the result to a new one with the actual problematic line (or something like that)! Do it in UMLClass
-
-
-
 export enum UMLClassError {
     MissingName,
     NameContainsInvalidCharacter,
@@ -63,24 +41,48 @@ export class UMLClass {
         return {
             value: new UMLClass(
                 name,
+                // [],
+                // []
                 (attributes && attributes.trim() ? attributes.trim().split("\n").map(Attribute.fromString) : []),
-                (operations && attributes.trim() ? operations.trim().split("\n").map(Operation.fromString) : [])
+                (operations && operations.trim() ? operations.trim().split("\n").map(Operation.fromString) : [])
             ),
             error: error
         };
     }
 }
 
+
 export class Attribute {
     private constructor(
         public readonly name: string,
         public readonly type: string,
-        public readonly multiplicity: Multiplicity | Result<Multiplicity, string>,
+        public readonly multiplicity: Result<Multiplicity, string>,
         public readonly identifier?: Result<Identifier, string>,
     ) { }
 
+    private static readonly ATTRIBUTE_REGEX = new RegExp(
+        [
+            String.raw`^\s*`,
+            String.raw`([^\s:](?:[^:]*[^\s:])?)`,
+            String.raw`\s*:\s*`,
+            String.raw`([^\s\[\{](?:[^\[\{]*[^\s\[\{])?)`,
+            String.raw`(?:\s*\[(.*)\.\.(.*)\])?`,
+            String.raw`(\s*\{\s*id(.*)\})?`,
+            String.raw`\s*$`,
+        ].join('')
+    );
+
     public static fromString(string: string): Result<Attribute | string, string[]> {
-        const match = /^([^\s:]+)\s*:\s*([^\[\{]+)(?:\s*\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\])?(?:\s*\{\s*id(\d*)\s*\})?$/.exec(string.trim());
+        // TODO: moving the multiplicity check to the multiplicity allows for more granular errors!
+        // TODO: make the regex more "flexible" (allow for invalid values), but give warnings / errors;
+        // TODO: moving the check to the multiplicity and the identifier allows for more fine-grained error handling! 
+
+
+        // String.raw`(?:\s*\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\])?`,
+        // String.raw`(\s*\{\s*id(\d*)\s*\})?`,
+
+        const match = Attribute.ATTRIBUTE_REGEX.exec(string);
+        // const match = /^([^\s:]+)\s*:\s*([^\[\{]*[^\s\[\{])(?:\s*\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\])?(\s*\{\s*id(\d*)\s*\})?$/.exec(string.trim());
 
         if (!match) {
             return { value: string, error: ["Invalid attribute syntax."] }
@@ -100,8 +102,10 @@ export class Attribute {
             value: new Attribute(
                 match[1],
                 match[2],
-                match[3] && match[4] ? Multiplicity.fromString(match[3], match[4]) : Multiplicity.DEFAULT,
-                match[5] ? Identifier.fromString(match[5]) : undefined
+                match[3] && match[4] ?
+                    Multiplicity.fromString(match[3], match[4]) :
+                    { value: Multiplicity.DEFAULT, error: "" },
+                match[5] ? Identifier.fromString(match[6]) : undefined
             ),
             error: errors
         }
@@ -109,7 +113,7 @@ export class Attribute {
 
     public toString(): string {
         return [
-            [`${this.name}`, `${this.type}`].filter(Boolean).join(": "), `${this.multiplicity}`, `${this.identifier || ""}`
+            [`${this.name}`, `${this.type}`].filter(Boolean).join(": "), `${this.multiplicity.value}`, `${this.identifier ? this.identifier.value : ""}`
         ].filter(Boolean).join(" ");
     }
 }
@@ -136,7 +140,6 @@ export class Operation {
                 (match[2] ? match[2].split(",").map(Parameter.fromString) : []),
                 match[3],
                 Multiplicity.DEFAULT
-                // new Multiplicity(),
             ),
             error: []
         };
@@ -219,6 +222,29 @@ export class Identifier {
         return `{id${this.number !== undefined ? this.number : ""}}`;
     }
 }
+
+// TODO: some kind of reference? like... Class -> definition -> line 3 -> col 12? Also add line numbers in textarea for definition;
+
+
+// TODO: What do I want here? I want it to still work somehow... so "do it"
+// But I have to add erors, and reference the thing that created the error.
+// Ah, yeah! if it is an error, then just show the normal string!
+// And maybe a reference to the object id (which is generic and passed in from the tryFrom) Maybe optional?
+// The identifier is something like : "object id" + extra annotation on line and column?
+// TODO: there is no need to pass the id! You can just get the list of errors!
+// Then, the caller decides what to do with it!
+
+// editor
+// config
+
+// I can return either class or no class
+// I can either errors or no errors
+// Like, I could return the class, with the list of warnings.
+
+// TODO: after the tryFrom, map the result to a new one with the actual problematic line (or something like that)! Do it in UMLClass
+
+
+
 
 // const match = /^\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\]$/.exec(string);
 

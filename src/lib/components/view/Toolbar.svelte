@@ -143,7 +143,7 @@
     <hr class="h-5 w-0 border-l" />
     <Zoom />
     <hr class="h-5 w-0 border-l" />
-    <History />
+    <!-- <History /> -->
     <hr class="h-5 w-0 border-l" />
     <a
         href="https://github.com/IonutCicio/uml-editor"

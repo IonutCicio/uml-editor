@@ -217,27 +217,12 @@ export function lengthToGridEven(size: number): number {
 }
 
 
-// export function lengthToGridEven(length: number): number {
-//     return Math.ceil(length / (get(conf).gridSize * 2)) * get(conf).gridSize * 2
-// }
+const canvas = document.createElement('canvas');
+const ctx = canvas.getContext('2d')!;
+ctx.font = `${get(conf).fontSize}px "Cascadia Code"`;
 
-// Math.floor(size / get(conf).gridSize) * get(conf).gridSize
-// Math.ceil(size / get(conf).gridSize) * get(conf).gridSize
-
-// return Math.ceil(length / get(conf).gridSize) * get(conf).gridSize
-
-const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-const textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-svg.appendChild(textElement);
-
-svg.setAttribute("style", "position: absolute; bottom: 0; left: 0; z-index: -100;")
-textElement.setAttribute("font-family", "Cascadia Code");
-textElement.setAttribute("font-size", `${get(conf).fontSize}px`);
-document.body.appendChild(svg);
-
-export function computeTextLength(text: string) {
-    textElement.textContent = text;
-    return textElement.getBBox().width;
+export function measureText(text: string): number {
+    return ctx.measureText(text).width;
 }
 
 export function exportSVG() {
@@ -345,6 +330,34 @@ function outside(
     };
 }
 
+
+
+
+
+
+// const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+// const textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+// svg.appendChild(textElement);
+//
+// svg.setAttribute("style", "position: absolute; bottom: 0; left: 0; z-index: -100;")
+// textElement.setAttribute("font-family", "Cascadia Code");
+// textElement.setAttribute("font-size", `${get(conf).fontSize}px`);
+// textElement.style.whiteSpace = "pre";
+// document.body.appendChild(svg);
+//
+// export function computeTextLength(text: string) {
+//     textElement.textContent = text;
+//     return textElement.getBBox().width;
+// }
+
+// export function lengthToGridEven(length: number): number {
+//     return Math.ceil(length / (get(conf).gridSize * 2)) * get(conf).gridSize * 2
+// }
+
+// Math.floor(size / get(conf).gridSize) * get(conf).gridSize
+// Math.ceil(size / get(conf).gridSize) * get(conf).gridSize
+
+// return Math.ceil(length / get(conf).gridSize) * get(conf).gridSize
 
 // startDirections: ['top', 'bottom', 'left', 'right'],
 // endDirections: ['top', 'bottom', 'left', 'right']

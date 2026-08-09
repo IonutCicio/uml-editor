@@ -1,6 +1,7 @@
 <script lang="ts">
     import { type IUMLClass } from "$lib/types/uml";
     import { hexToHSL, HSLToHex } from "$lib/utils";
+    import { onDestroy } from "svelte";
 
     const { component }: { component: IUMLClass } = $props();
 
@@ -13,7 +14,8 @@
     );
 
     let definition = $state(component.get("definition") || "");
-    $effect(() => {
+
+    onDestroy(() => {
         component.set("definition", definition);
         component.update();
     });
@@ -41,6 +43,7 @@
             id="definition"
             class="w-full h-96 p-4 border border-black"
             bind:value={definition}
+            autofocus
         >
         </textarea>
     </div>
@@ -63,3 +66,8 @@
         />
     </div>
 </div>
+
+<!-- /* $effect(() => { -->
+<!--     component.set("definition", definition); -->
+<!--     component.update(); -->
+<!-- }); */ -->

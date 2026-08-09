@@ -2,7 +2,7 @@ import type { IUMLLink } from "$lib/types/uml";
 import { conf } from "$lib";
 import { get } from "svelte/store";
 import * as joint from "@joint/core";
-import { computeTextLength, lengthToGridEven, snapSize } from "$lib/utils";
+import { measureText, lengthToGridEven, snapSize } from "$lib/utils";
 
 export const JointJSAssociation = joint.dia.Link.define(
     "custom.JointJSAssociation",
@@ -91,7 +91,7 @@ export const JointJSAssociation = joint.dia.Link.define(
 
         update: function(this: IUMLLink) {
             const sourceMultiplicity = this.get("sourceMultiplicity") || "";
-            const sourceLabelLength = snapSize(computeTextLength(sourceMultiplicity), get(conf).gridSize * 2, Math.ceil)
+            const sourceLabelLength = snapSize(measureText(sourceMultiplicity), get(conf).gridSize * 2, Math.ceil)
 
             let sourceLabelPosition = sourceLabelLength / 2 + get(conf).gridSize / 2;
             if (
@@ -112,7 +112,7 @@ export const JointJSAssociation = joint.dia.Link.define(
             // ----
 
             const targetMultiplicity = this.get("targetMultiplicity") || "";
-            const targetLabelLength = lengthToGridEven(computeTextLength(targetMultiplicity))
+            const targetLabelLength = lengthToGridEven(measureText(targetMultiplicity))
 
             let targetLabelPosition = (targetLabelLength / 2 + get(conf).gridSize / 2)
             if (
@@ -136,7 +136,7 @@ export const JointJSAssociation = joint.dia.Link.define(
             // ----
 
             const name = this.get("name") || "";
-            const nameLabelLength = snapSize(computeTextLength(name), get(conf).gridSize * 2, Math.ceil)
+            const nameLabelLength = snapSize(measureText(name), get(conf).gridSize * 2, Math.ceil)
 
             this.label(1, {
                 attrs: {

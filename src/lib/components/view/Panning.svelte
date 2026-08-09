@@ -7,16 +7,18 @@
         mouseButton = $bindable(),
     }: { editorMode: EditorMode; mouseButton: number } = $props();
 
-    let initialX: number = 0;
-    let initialY: number = 0;
+    let initialClientX: number = 0;
+    let initialClientY: number = 0;
+    let initialTranslateX: number = 0;
+    let initialTranslateY: number = 0;
 
     paper.on("blank:pointerdown", function (event: joint.dia.Event) {
-        const eventPositionOnPaper = paper.clientToLocalPoint(
-            event.clientX || 0,
-            event.clientY || 0,
-        );
-        initialX = eventPositionOnPaper.x;
-        initialY = eventPositionOnPaper.y;
+        initialClientX = event.clientX || 0;
+        initialClientY = event.clientY || 0;
+
+        const translate = paper.translate();
+        initialTranslateX = translate.tx;
+        initialTranslateY = translate.ty;
     });
 
     paper.on("blank:pointermove", function (event: joint.dia.Event) {
@@ -24,15 +26,9 @@
             return;
         }
 
-        const eventPositionOnPaper = paper.clientToLocalPoint(
-            event.clientX || 0,
-            event.clientY || 0,
-        );
+        const dx = (event.clientX || 0) - initialClientX;
+        const dy = (event.clientY || 0) - initialClientY;
 
-        const dx = eventPositionOnPaper.x - initialX;
-        const dy = eventPositionOnPaper.y - initialY;
-
-        const translate = paper.translate();
-        paper.translate(translate.tx + dx, translate.ty + dy);
+        paper.translate(initialTranslateX + dx, initialTranslateY + dy);
     });
 </script>

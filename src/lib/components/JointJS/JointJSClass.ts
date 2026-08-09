@@ -1,13 +1,29 @@
 import { type IUMLClass, } from '$lib/types/uml';
-import { graph, snapSize, computeTextLength } from '$lib/utils';
+import { graph, snapSize, measureText } from '$lib/utils';
 import { Attribute, conf, UMLClass } from '$lib';
 import { get } from 'svelte/store';
 import * as joint from '@joint/core';
 
+const ERROR_ATTRS = {
+    fill: 'red',
+    textDecoration: "underline wavy red 1.5px",
+};
+
+const WARNING_ATTRS = {
+    fill: 'red',
+    textDecoration: "underline wavy red 1.5px",
+};
+
+const TEXT_ATTRS = {
+    fontSize: get(conf).fontSize,
+    textVerticalAnchor: "middle",
+    fill: 'black'
+}
+
 export const JointJSClass = joint.dia.Element.define(
     'custom.JointJSClass',
     {
-        definition: 'Class',
+        definition: '',
         attrs: {
             body: {
                 refWidth: '100%',
@@ -52,7 +68,7 @@ export const JointJSClass = joint.dia.Element.define(
             let minWidth = this.size().width;
             let currentY = 0;
 
-            minWidth = Math.max(minWidth, computeTextLength(umlClass.name) + get(conf).gridSize)
+            minWidth = Math.max(minWidth, measureText(umlClass.name || 'Class') + get(conf).gridSize)
             attrs["name"] = { text: umlClass.name };
 
             currentY += get(conf).gridSize * 2;
@@ -60,53 +76,50 @@ export const JointJSClass = joint.dia.Element.define(
                 y1: currentY,
                 y2: currentY,
                 stroke: this.attr('body/stroke'),
-                visibility: umlClass.attributes.length > 0 || umlClass.operations.length > 0 ? "visible" : "hidden",
+                visibility:
+                    (
+                        (umlClass.attributes.length > 0 || umlClass.operations.length > 0) ||
+                        (umlClass.attributes.length === 0 && umlClass.operations.length === 0)
+                    ) ? "visible" : "hidden",
             };
 
+            if (umlClass.attributes.length === 0 && umlClass.operations.length === 0) {
+                currentY += get(conf).gridSize * 2;
+            }
 
-            umlClass.attributes.forEach((attribute, index) => {
-                minWidth = Math.max(minWidth, computeTextLength(attribute.value.toString()) + get(conf).gridSize);
+            umlClass.attributes.forEach(({ value: attribute, error }, index) => {
+                minWidth = Math.max(minWidth, measureText(attribute.toString()) + get(conf).gridSize);
 
-                const textAttrs = {
-                    y: currentY + get(conf).gridSize,
-                    fontSize: get(conf).fontSize,
-                    textVerticalAnchor: "middle",
-                    fill: 'black'
+                const lineAttrs = { y: currentY + get(conf).gridSize, ...TEXT_ATTRS };
+
+                attrs[`attribute-${index}`] = { x: get(conf).gridSize / 2, ...lineAttrs };
+
+                const newAttrs: Record<string, any> = {};
+
+                if (attribute instanceof Attribute) {
+                    newAttrs[`attribute-name-${index}`] = { text: `${attribute.name}: `, ...lineAttrs }; // TODO: handle errors / warnings;
+                    newAttrs[`attribute-type-${index}`] = { text: attribute.type, fontWeight: "bold", ...lineAttrs }; // TODO: handle errors;
+
+                    const multiplicityString = attribute.multiplicity.value.toString();
+                    if (multiplicityString) {
+                        newAttrs[`attribute-multiplicity-${index}`] = { text: ` ${multiplicityString}`, ...lineAttrs };
+                    }
+
+                    const identifierString = attribute.identifier ? attribute.identifier.value.toString() : "";
+                    if (identifierString) {
+                        newAttrs[`attribute-id-${index}`] = { text: ` ${identifierString}`, fontStyle: "italic", ...lineAttrs };
+                    }
+                } else {
+                    newAttrs[`attribute-text-${index}`] = { text: attribute, ...lineAttrs, ...ERROR_ATTRS };
                 }
 
-                if (!(attribute.value instanceof Attribute)) {
-                    attrs[`attribute-${index}`] = { x: get(conf).gridSize / 2, ...textAttrs };
-                    attrs[`attribute-text-${index}`] = { text: attribute.value, ...textAttrs, fill: 'red' };
-
-                    markup.push({
-                        tagName: "text",
-                        selector: `attribute-${index}`,
-                        children: [
-                            { tagName: "tspan", selector: `attribute-text-${index}` },
-                        ]
-                    });
-
-                    currentY += get(conf).gridSize * 2;
-                    return
-                }
-
-                console.log(`${attribute.value}`)
-
-                attrs[`attribute-${index}`] = { x: get(conf).gridSize / 2, ...textAttrs };
-                attrs[`attribute-name-${index}`] = { text: attribute.value.name, ...textAttrs };
-                attrs[`attribute-type-${index}`] = { text: attribute.value.type ? `: ${attribute.value.type}` : "", fontWeight: "normal", ...textAttrs };
-                attrs[`attribute-multiplicity-${index}`] = { text: attribute.value.multiplicity.toString(), ...textAttrs }
-                attrs[`attribute-id-${index}`] = { text: (attribute.value.identifier || "").toString(), fontStyle: "italic", ...textAttrs }
+                Object.assign(attrs, newAttrs);
 
                 markup.push({
                     tagName: "text",
                     selector: `attribute-${index}`,
-                    children: [
-                        { tagName: "tspan", selector: `attribute-name-${index}` },
-                        { tagName: "tspan", selector: `attribute-type-${index}` },
-                        { tagName: "tspan", selector: `attribute-multiplicity-${index}` },
-                        { tagName: "tspan", selector: `attribute-id-${index}` }
-                    ]
+                    children: Object.keys(newAttrs)
+                        .map((selector) => ({ tagName: "tspan", selector }))
                 });
 
                 currentY += get(conf).gridSize * 2;
@@ -121,7 +134,7 @@ export const JointJSClass = joint.dia.Element.define(
 
             umlClass.operations.forEach((op, index) => {
                 const text = op.toString();
-                minWidth = Math.max(minWidth, computeTextLength(text) + get(conf).gridSize);
+                minWidth = Math.max(minWidth, measureText(text) + get(conf).gridSize);
 
                 // TODO: make it more detailed, for [ ] too, and for () and for : (like operations and like that)
                 // TODO: handle each parameter
@@ -149,6 +162,7 @@ export const JointJSClass = joint.dia.Element.define(
                 currentY += get(conf).gridSize * 2;
             });
 
+
             // TODO: get the anchors attached to this object, and take the minium of those heights / widths (dy, dx)...
 
             this.resize(
@@ -160,6 +174,31 @@ export const JointJSClass = joint.dia.Element.define(
         }
     }
 );
+
+// let markupChildrenSelectors: string[] = [];
+// markupChildrenSelectors.push(`attribute-text-${index}`);
+
+// console.log("BEFORE", Object.keys(attrs));
+// const previousAttrsLength = Object.keys(attrs).length;
+
+// markup.push({
+//     tagName: "text",
+//     selector: `attribute-${index}`,
+//     children: [
+//         { tagName: "tspan", selector: `attribute-text-${index}` },
+//     ]
+// });
+//
+// currentY += get(conf).gridSize * 2;
+// return
+
+// children: [
+//     { tagName: "tspan", selector: `attribute-name-${index}` },
+//     { tagName: "tspan", selector: `attribute-type-${index}` },
+//     { tagName: "tspan", selector: `attribute-multiplicity-${index}` },
+//     { tagName: "tspan", selector: `attribute-id-${index}` }
+// ]
+
 
 // stroke: 'black',
 // fill: 'white',

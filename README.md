@@ -96,7 +96,7 @@ You can preview the production build with `npm run preview`.
     13. [x] When pressing Esc, all stuff closes and deselects
         - [x] For now it deselects
         - [ ] It must close menus too
-    14. [x] Store `zoom` to `localStorage`, load on start
+    14. [ ] Store `zoom` to `localStorage`, load on start
     15. [ ] Always on hints under tool selection on usage (small, gray, with `<code></code>` too for some keys like Ctrl), maybe add possiblity disable hints
     16. [x] Handle association and generalization moving from one port to another
     17. [x] If a port is connect to an association, there aren't other links to that port; it's either multiple generalizations or one association
@@ -120,20 +120,34 @@ You can preview the production build with `npm run preview`.
     3. [x] Update `localStorage` on deletion of elments too (or debug it at least)
     4. [x] Association label resize width on content change
     5. [x] Fix slow input when editing attributes and operations (i.e. save just after typing, not before)
-    6. [ ] The smaller the zoom gets, the worse the panning becomes (it's all jittery) 
+    6. [x] The smaller the zoom gets, the worse the panning becomes (it's all jittery) 
     7. [x] When moving multiple selected elements, it gets slow
 
+
+
 TODO:
-- reduce minimum zoom to 40
-- dashed line
-- use-case
-- actor
-- object
-- link
-- instanceOf
-- 2 toolbar lines: one for objects-like things, one for link-like things... nah
-- global "list of warnings" always visible, or at least you can open, with a
+- [x] reduce minimum zoom to 40 (did it to 10!)
+- [ ] dashed line
+- [ ] use-case
+- [ ] actor
+- [ ] object
+- [ ] link
+- [ ] instanceOf
+- [ ] 2 toolbar lines: one for objects-like things, one for link-like things... nah
+- [ ] global "list of warnings" always visible, or at least you can open, with a
   small number of warnings, to show the errors.
-    - this is made because we don't want the editor to fail if there is some
+    - [ ] this is made because we don't want the editor to fail if there is some
       naive mistake, but we still want to show CLEAR indications of problems, if any (possibly, not directly on the diagram?)
-- allow having multiple diagrams open! (localStorage by default limits to only one!)
+- [ ] allow having multiple diagrams open! (localStorage by default limits to only one!)
+- [ ] when selected, show the midpoints, the "every 4" points, and the angles (just graphically!)
+- [ ] possibliy alignement lines when two objects are aligned too!
+- [x] the zoom thingies... I can't do it without them, sorry!
+- [ ] make selection the default or something
+- [ ] make selection "all directional"
+- [ ] associations
+- [ ] association classes
+- [ ] Panel with warnings and errors
+- [ ] Generalization
+- [x] Smaller zoom
+- [ ] Diagram title
+- [ ] Re-introduce localStorage saved zoom at some point! (Even though, one would expect to reload to reset the state, so think about it well)

@@ -1,19 +1,23 @@
-<script>
+<script lang="ts">
+    import * as joint from "@joint/core";
+    import { graph, paper, snapSizeToClosest } from "$lib/utils";
+    import { JointJSAssociation } from "../JointJS/JointJSAssociation";
+
     // State to hold the source element details during the two-step click process
     let pendingSource: any = null;
     let tempLink: any = null;
 
     function handleMouseMove(evt) {
         if (!tempLink) return;
-        // Convert browser client coordinates to paper coordinates
         const p = paper.clientToLocalPoint({ x: evt.clientX, y: evt.clientY });
-        tempLink.target({ x: lengthToGrid(p.x), y: lengthToGrid(p.y) });
+        tempLink.target({
+            x: snapSizeToClosest(p.x),
+            y: snapSizeToClosest(p.y),
+        });
     }
 
-    // Prevent default context menu globally on the paper container if needed
     paper.el.addEventListener("contextmenu", (evt) => evt.preventDefault());
 
-    // Listen for right-clicks on elements
     paper.on("element:contextmenu", function (elementView, evt, x, y) {
         evt.preventDefault();
 
@@ -28,8 +32,14 @@
 
         const min = Math.min(dTop, dBottom, dLeft, dRight);
 
-        let dx = Math.min(bbox.width, Math.max(lengthToGrid(x) - bbox.x, 0));
-        let dy = Math.min(bbox.height, Math.max(lengthToGrid(y) - bbox.y, 0));
+        let dx = Math.min(
+            bbox.width,
+            Math.max(snapSizeToClosest(x) - bbox.x, 0),
+        );
+        let dy = Math.min(
+            bbox.height,
+            Math.max(snapSizeToClosest(y) - bbox.y, 0),
+        );
 
         if (dTop == min) {
             dy = 0;
@@ -49,7 +59,7 @@
             };
 
             console.log("x, y", x, y);
-            console.log("~x, ~y", lengthToGrid(x), lengthToGrid(y));
+            console.log("~x, ~y", snapSizeToClosest(x), snapSizeToClosest(y));
             tempLink = new joint.shapes.standard.Link({
                 source: {
                     id: pendingSource.id,
@@ -58,7 +68,7 @@
                         args: { dx: pendingSource.dx, dy: pendingSource.dy },
                     },
                 },
-                target: { x: lengthToGrid(x), y: lengthToGrid(y) },
+                target: { x: snapSizeToClosest(x), y: snapSizeToClosest(y) },
                 attrs: {
                     root: {
                         pointerEvents: "none",
@@ -95,6 +105,14 @@
                     anchor: {
                         name: "topLeft",
                         args: { dx: targetDx, dy: targetDy },
+                    },
+                },
+                router: {
+                    name: "manhattan",
+                    args: {
+                        // TODO: this must be computed!
+                        startDirections: ["top"],
+                        endDirections: ["bottom"],
                     },
                 },
             });

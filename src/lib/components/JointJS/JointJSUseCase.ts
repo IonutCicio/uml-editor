@@ -1,5 +1,5 @@
 import { type IUMLUseCase, type UMLAttribute, type UMLOperation } from '$lib/types/uml';
-import { graph, lengthToGridEven, computeTextLength } from '$lib/utils';
+import { graph, lengthToGridEven, measureText } from '$lib/utils';
 import { conf } from '$lib';
 import { get } from 'svelte/store';
 import * as joint from '@joint/core';
@@ -111,14 +111,14 @@ export const JointJSUseCase = joint.dia.Element.define(
                     attributes.length > 0 || operations.length > 0 ? "visible" : "hidden",
             };
 
-            let width = lengthToGridEven(computeTextLength(name) + get(conf).gridSize)
+            let width = lengthToGridEven(measureText(name) + get(conf).gridSize)
             let y = get(conf).gridSize * 2; // divider1
 
             attributes.forEach((attribute, index) => {
                 const multiplicityString = attribute.multiplicityLower === attribute.multiplicityUpper && attribute.multiplicityLower == 1 ? "" : ` [${attribute.multiplicityLower}..${attribute.multiplicityUpper}]`
                 const identifierString = attribute.identifierEnabled ? ` {id${attribute.identifierNumber ? attribute.identifierNumber : ""}}` : "";
 
-                width = Math.max(width, lengthToGridEven(computeTextLength(`${attribute.name}: ${attribute.type}${multiplicityString}${identifierString}`) + get(conf).gridSize));
+                width = Math.max(width, lengthToGridEven(measureText(`${attribute.name}: ${attribute.type}${multiplicityString}${identifierString}`) + get(conf).gridSize));
 
                 const text = {
                     y: y + get(conf).gridSize,
@@ -157,7 +157,7 @@ export const JointJSUseCase = joint.dia.Element.define(
 
             operations.forEach((op, index) => {
                 const text = operationToString(op);
-                width = Math.max(width, lengthToGridEven(computeTextLength(text) + get(conf).gridSize));
+                width = Math.max(width, lengthToGridEven(measureText(text) + get(conf).gridSize));
 
                 attrs[`operation${index} `] = {
                     text: text,
