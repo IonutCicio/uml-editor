@@ -37,7 +37,7 @@ export const JointJSClass = joint.dia.Element.define(
                 y: get(conf).gridSize,
                 textAnchor: 'middle',
                 textVerticalAnchor: 'middle',
-                style: 'font-weight: 400 !important',
+                style: 'font-weight: 800 !important',
                 fontSize: get(conf).fontSize,
             },
             divider1: { x1: 0, x2: 'calc(w)' },
@@ -68,10 +68,11 @@ export const JointJSClass = joint.dia.Element.define(
             let minWidth = this.size().width;
             let currentY = 0;
 
-            minWidth = Math.max(minWidth, measureText(umlClass.name || 'Class') + get(conf).gridSize)
             attrs["name"] = { text: umlClass.name };
 
+            minWidth = Math.max(minWidth, measureText(umlClass.name || 'Class') + get(conf).gridSize)
             currentY += get(conf).gridSize * 2;
+
             attrs["divider1"] = {
                 y1: currentY,
                 y2: currentY,
@@ -98,7 +99,7 @@ export const JointJSClass = joint.dia.Element.define(
 
                 if (attribute instanceof Attribute) {
                     newAttrs[`attribute-name-${index}`] = { text: `${attribute.name}: `, ...lineAttrs }; // TODO: handle errors / warnings;
-                    newAttrs[`attribute-type-${index}`] = { text: attribute.type, fontWeight: "bold", ...lineAttrs }; // TODO: handle errors;
+                    newAttrs[`attribute-type-${index}`] = { text: attribute.type, fontWeight: 400, ...lineAttrs }; // TODO: handle errors;
 
                     const multiplicityString = attribute.multiplicity.value.toString();
                     if (multiplicityString) {

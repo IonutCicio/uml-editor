@@ -8,8 +8,12 @@ export const JointJSAssociation = joint.dia.Link.define(
     "custom.JointJSAssociation",
     {
         ...joint.dia.Link.prototype.defaults,
+        // TODO: rename "Multiplicity" to "role" and add the following things: 
+        // - multiplicity
+        // - name
+        // - identifiers list
         sourceMultiplicity: "0..*",
-        name: "association",
+        name: "",
         targetMultiplicity: "0..*",
         attrs: {
             line: {
@@ -24,7 +28,6 @@ export const JointJSAssociation = joint.dia.Link.define(
             }
         },
         labels: [
-            // 0: Source Multiplicity
             {
                 attrs: {
                     text: { "font-size": get(conf).fontSize },
@@ -35,7 +38,6 @@ export const JointJSAssociation = joint.dia.Link.define(
                     },
                 }
             },
-            // 1: Association Name
             {
                 position: 0.5,
                 attrs: {
@@ -49,7 +51,6 @@ export const JointJSAssociation = joint.dia.Link.define(
                     }
                 }
             },
-            // 2: Target Multiplicity
             {
                 attrs: {
                     text: { "font-size": get(conf).fontSize },
@@ -90,36 +91,51 @@ export const JointJSAssociation = joint.dia.Link.define(
         },
 
         update: function(this: IUMLLink) {
-            const sourceMultiplicity = this.get("sourceMultiplicity") || "";
+            const router = this.router();
+
+            const sourceMultiplicity = this.get("sourceMultiplicity");
             const sourceLabelLength = snapSize(measureText(sourceMultiplicity), get(conf).gridSize * 2, Math.ceil)
 
-            let sourceLabelPosition = sourceLabelLength / 2 + get(conf).gridSize / 2;
-            if (
-                this.get("source")?.port?.includes("port-b-") ||
-                this.get("source")?.port?.includes("port-t-")
-            ) {
-                sourceLabelPosition = get(conf).gridSize;
+            let sourceLabelPosition = 1;
+            const sourceDirection = router?.args.startDirections[0];
+            if (sourceDirection === "top") {
+                sourceLabelPosition = get(conf).gridSize * 1;
+            } else if (sourceDirection === "bottom") {
+                sourceLabelPosition = get(conf).gridSize * 1;
+            } else if (sourceDirection === "left") {
+                sourceLabelPosition = get(conf).gridSize * 1.5;
+            } else if (sourceDirection === "right") {
+                sourceLabelPosition = get(conf).gridSize * 1.5;
             }
 
             this.label(0, {
                 attrs: {
                     text: { text: sourceMultiplicity },
-                    rect: { width: sourceLabelLength }
+                    rect: {
+                        width: sourceLabelLength,
+                        fill: "white",
+                        stroke: "white",
+                        strokeWidth: 1,
+                    }
                 },
                 position: sourceLabelPosition,
             });
 
             // ----
 
-            const targetMultiplicity = this.get("targetMultiplicity") || "";
+            const targetMultiplicity = this.get("targetMultiplicity");
             const targetLabelLength = lengthToGridEven(measureText(targetMultiplicity))
 
-            let targetLabelPosition = (targetLabelLength / 2 + get(conf).gridSize / 2)
-            if (
-                this.get("target")?.port?.includes("port-b-") ||
-                this.get("target")?.port?.includes("port-t-")
-            ) {
-                targetLabelPosition = get(conf).gridSize;
+            let targetLabelPosition = 1;
+            const targetDirection = router?.args.endDirections[0];
+            if (targetDirection === "top") {
+                targetLabelPosition = get(conf).gridSize * 1;
+            } else if (targetDirection === "bottom") {
+                targetLabelPosition = get(conf).gridSize * 1;
+            } else if (targetDirection === "left") {
+                targetLabelPosition = get(conf).gridSize * 1.5;
+            } else if (targetDirection === "right") {
+                targetLabelPosition = get(conf).gridSize * 1.5;
             }
 
             this.label(2, {
@@ -127,7 +143,10 @@ export const JointJSAssociation = joint.dia.Link.define(
                     text: { text: targetMultiplicity },
                     rect: {
                         x: - targetLabelLength / 2,
-                        width: targetLabelLength
+                        width: targetLabelLength,
+                        fill: "white",
+                        stroke: "white",
+                        strokeWidth: 1,
                     }
                 },
                 position: -1 * targetLabelPosition
@@ -135,7 +154,7 @@ export const JointJSAssociation = joint.dia.Link.define(
 
             // ----
 
-            const name = this.get("name") || "";
+            const name = this.get("name");
             const nameLabelLength = snapSize(measureText(name), get(conf).gridSize * 2, Math.ceil)
 
             this.label(1, {
@@ -143,7 +162,7 @@ export const JointJSAssociation = joint.dia.Link.define(
                     text: { text: name },
                     rect: {
                         x: - nameLabelLength / 2,
-                        width: nameLabelLength
+                        width: nameLabelLength,
                     }
                 }
             });
