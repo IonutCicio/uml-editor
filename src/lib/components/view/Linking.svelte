@@ -99,20 +99,23 @@
                 : [x, y],
         );
 
+        let dx: number | string = closestX - x1;
+        let dy: number | string = closestY - y1;
         let direction = "top";
 
         if (closestX === x1) {
             direction = "left";
+            dx = "0%";
         } else if (closestX === x1 + width1) {
             direction = "right";
+            dx = "100%";
         } else if (closestY === y1) {
             direction = "top";
+            dy = "0%";
         } else if (closestY === y1 + height1) {
             direction = "bottom";
+            dy = "100%";
         }
-
-        let dx: number = closestX - x1;
-        let dy: number = closestY - y1;
 
         tempPedingSource = {
             id: closestObj.id,
