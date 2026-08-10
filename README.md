@@ -209,3 +209,5 @@ You can preview the production build with `npm run preview`.
         - To a "joint point" with another generalization (like create from
           point to class, and then join the other classes using a
           generalization line) .
+    - [ ] When you first place the link, it is not placed very well, it should
+      be immediately straightened somehow...

@@ -6,58 +6,143 @@ export const conf = writable({
     fontSize: 13
 });
 
+// 3 options:
+// 1. Couldn't parse at all, so I give you the input string 
+// 2. Could parse, but there are some errors / warnings
+// 3. Could parse, there are no errors warnings 
 export type Result<T, E> = {
     value: T;
     error: E;
 };
 
-
-export enum UMLClassError {
-    MissingName,
-    NameContainsInvalidCharacter,
-    NameNotInPascalCase,
+// severity
+// diagnostic
+export enum DiagnosticSeverity {
+    Error,
+    Warning,
+    Hint,
 }
+
+export interface Diagnostic {
+    readonly severity: DiagnosticSeverity;
+    readonly message: string;
+}
+
+// export enum UMLClassError {
+//     MissingName,
+//     NameContainsInvalidCharacter,
+//     NameNotInPascalCase,
+// }
+// let error: UMLClassError | undefined = undefined;
+// error = UMLClassError.MissingName;
+// error = UMLClassError.NameNotInPascalCase;
+// error = UMLClassError.NameContainsInvalidCharacter;
+// { value: name, error: nameErrors },
+
+// if (!name) {
+//     nameErrors.push("Missing name.");
+// }
+//
+// if (!/[A-Za-z0-9]*/.test(name)) {
+//     nameErrors.push("Invalid characters.");
+// }
+//
+// if (!/^(?:[A-Z][a-z0-9]*)*$/.test(name)) {
+//     nameErrors.push("Expected PascalCase.");
+// }
+
+// type Validator<T, E> = (value: T) => E | null;
+//
+// // Generic helper to create validation rules
+// const createRule = <T, E>(
+//   predicate: (val: T) => boolean,
+//   error: E
+// ): Validator<T, E> =>
+//   (value) => (predicate(value) ? null : error);
+//
+// const regexRule = (pattern: RegExp, error: string) =>
+//   createRule<string, string>((val) => pattern.test(val), error);
+//
+// export const alphanumeric = regexRule(/^[a-zA-Z0-9]+$/, "Must be alphanumeric");
+// export const snakeCase = regexRule(/^[a-z0-9]+(_[a-z0-9]+)*$/, "Must be in snake_case");
+// export const pascalCase = regexRule(/^[A-Z][a-zA-Z0-9]*$/, "Must be in PascalCase");
+//
+// export const naturalNumber = createRule<number, string>(
+//   (n) => Number.isInteger(n) && n >= 0,
+//   "Must be a natural number (0 or greater)"
+// );
+//
+// export const nonZeroNaturalNumber = createRule<number, string>(
+//   (n) => Number.isInteger(n) && n > 0,
+//   "Must be a non-zero natural number"
+// );
+//
+// export function validate<T, E>(value: T, validators: Validator<T, E>[]): Result<T, E> {
+//   const errors = validators
+//     .map((validator) => validator(value))
+//     .filter((error): error is E => error !== null);
+//
+//   return errors.length === 0
+//     ? { success: true, value }
+//     : { success: false, errors };
+// }
+
+const EMPTY = () => { };
+const ALPHANUMERIC = () => { };
+// TODO: snake_case validator
+// TODO: natural number validator
+// TODO: non-zero natural number validator
+const PASCAL_CASE = () => { };
+
+// I don't really like it being such a simple name / it being not a method or something...
+function validate<T, E>(value: T, listOfValidators: (() => void)[]): Result<T, E[]> {
+    return { value: value, error: [] };
+}
+
+// TODO: export type UnparsedString = string; or something, make it "package" constructor, and public read?
+// definition
+// unparsed
+// string
+// to
+// parse
 
 export class UMLClass {
     private constructor(
-        public readonly name: string,
-        public readonly attributes: Result<Attribute | string, string[]>[],
-        public readonly operations: Result<Operation | string, string[]>[]
+        public readonly name: Result<string, string[]>,
+        public readonly attributes: (Attribute | string)[],
+        public readonly operations: (Operation | string)[]
     ) { }
 
-    public static fromString(string: string): Result<UMLClass, UMLClassError | undefined> {
+    public static fromString(string: string): UMLClass {
         // "".split("\n\n") -> [""]
         const [name, attributes, operations]: string[] = string.trim().split("\n\n");
 
-        let error: UMLClassError | undefined = undefined;
-        if (!name) {
-            error = UMLClassError.MissingName;
-        } else if (!/[A-Za-z0-9]+/.test(name)) {
-            error = UMLClassError.NameContainsInvalidCharacter;
-        } else if (!/^[A-Z][a-z0-9]*(?:[A-Z][a-z0-9]*)*$/.test(name)) {
-            error = UMLClassError.NameNotInPascalCase;
-        }
-
-        return {
-            value: new UMLClass(
-                name,
-                // [],
-                // []
-                (attributes && attributes.trim() ? attributes.trim().split("\n").map(Attribute.fromString) : []),
-                (operations && operations.trim() ? operations.trim().split("\n").map(Operation.fromString) : [])
-            ),
-            error: error
-        };
+        return new UMLClass(
+            validate(name, [EMPTY, ALPHANUMERIC, PASCAL_CASE]),
+            (attributes && attributes.trim() ? attributes.trim().split("\n").map(Attribute.fromString) : []),
+            (operations && operations.trim() ? operations.trim().split("\n").map(Operation.fromString) : [])
+        );
     }
 }
 
 
+// return { value: string, error: ["Invalid attribute syntax."] }
+// TODO: make the regex more "flexible" (allow for invalid values), but give warnings / errors;
+
+// name must be non empty
+// name and invalid characters
+// name must be in snake_case
+
+// type must be non empty
+// type and invalid characters
+// type must be PascalCase ? (not necessarily! It can contain extra stuff)
+
 export class Attribute {
     private constructor(
-        public readonly name: string,
-        public readonly type: string,
+        public readonly name: Result<string, string[]>,
+        public readonly type: Result<string, string[]>,
         public readonly multiplicity: Result<Multiplicity, string>,
-        public readonly identifier?: Result<Identifier, string>,
+        public readonly identifiers: Result<Identifier, string>[],
     ) { }
 
     private static readonly ATTRIBUTE_REGEX = new RegExp(
@@ -67,53 +152,39 @@ export class Attribute {
             String.raw`\s*:\s*`,
             String.raw`([^\s\[\{](?:[^\[\{]*[^\s\[\{])?)`,
             String.raw`(?:\s*\[(.*)\.\.(.*)\])?`,
-            String.raw`(\s*\{\s*id(.*)\})?`,
+            String.raw`((?:\s*\{id[^}]*\})*)`,
             String.raw`\s*$`,
         ].join('')
     );
 
-    public static fromString(string: string): Result<Attribute | string, string[]> {
-        // TODO: moving the multiplicity check to the multiplicity allows for more granular errors!
-        // TODO: make the regex more "flexible" (allow for invalid values), but give warnings / errors;
-        // TODO: moving the check to the multiplicity and the identifier allows for more fine-grained error handling! 
-
-
-        // String.raw`(?:\s*\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\])?`,
-        // String.raw`(\s*\{\s*id(\d*)\s*\})?`,
-
+    public static fromString(string: string): Attribute | string {
         const match = Attribute.ATTRIBUTE_REGEX.exec(string);
-        // const match = /^([^\s:]+)\s*:\s*([^\[\{]*[^\s\[\{])(?:\s*\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\])?(\s*\{\s*id(\d*)\s*\})?$/.exec(string.trim());
 
         if (!match) {
-            return { value: string, error: ["Invalid attribute syntax."] }
+            return string
         }
 
-        let errors: string[] = []
-
-        // name must be non empty
-        // name and invalid characters
-        // name must be in snake_case
-
-        // type must be non empty
-        // type and invalid characters
-        // type must be PascalCase ? (not necessarily! It can contain extra stuff)
-
-        return {
-            value: new Attribute(
-                match[1],
-                match[2],
-                match[3] && match[4] ?
-                    Multiplicity.fromString(match[3], match[4]) :
-                    { value: Multiplicity.DEFAULT, error: "" },
-                match[5] ? Identifier.fromString(match[6]) : undefined
-            ),
-            error: errors
-        }
+        return new Attribute(
+            validate(match[1], [EMPTY]),
+            validate(match[2], [EMPTY]),
+            match[3] && match[4] ?
+                Multiplicity.fromString(match[3], match[4]) :
+                { value: Multiplicity.DEFAULT, error: "" },
+            match[5] ? Array.from(
+                match[5].matchAll(/\{id([^}]*)\}/gi),
+                (match) => Identifier.fromString(match[1])
+            ) : []
+        );
     }
 
     public toString(): string {
         return [
-            [`${this.name}`, `${this.type}`].filter(Boolean).join(": "), `${this.multiplicity.value}`, `${this.identifier ? this.identifier.value : ""}`
+            [
+                `${this.name}`,
+                `${this.type}`
+            ].filter(Boolean).join(": "),
+            `${this.multiplicity.value}`,
+            this.identifiers.map(({ value }) => value.toString()).join(" ")
         ].filter(Boolean).join(" ");
     }
 }
@@ -127,11 +198,12 @@ export class Operation {
     ) {
     }
 
-    public static fromString(string: string): Result<Operation | string, string[]> {
+    public static fromString(string: string): Operation | string {
         const match = /(\w+)\((.*?)\):\s(\w+)/.exec(string)
 
         if (!match) {
-            return { value: string, error: ["Invalid operation syntax."] }
+            return string;
+            // return { value: string, error: ["Invalid operation syntax."] }
         }
 
         return {
@@ -222,6 +294,24 @@ export class Identifier {
         return `{id${this.number !== undefined ? this.number : ""}}`;
     }
 }
+
+
+
+// String.raw`(?:\s*\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\])?`,
+// String.raw`(\s*\{\s*id(\d*)\s*\})?`,
+// const match = /^([^\s:]+)\s*:\s*([^\[\{]*[^\s\[\{])(?:\s*\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\])?(\s*\{\s*id(\d*)\s*\})?$/.exec(string.trim());
+
+// console.log(match[5] ? Array.from(
+//     match[5].matchAll(/\{id([^}]*)\}/gi),
+//     (match) => match
+// ) : [])
+
+// match[5] ? Array.from(
+//     match[5].matchAll(/\b\{id([^{]*)\}\b/gi),
+//     ([match]) => Identifier.fromString(match[2])
+// ) : []
+// []
+// Identifier.fromString(match[6]) : undefined
 
 // TODO: some kind of reference? like... Class -> definition -> line 3 -> col 12? Also add line numbers in textarea for definition;
 

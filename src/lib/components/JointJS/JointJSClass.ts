@@ -106,10 +106,12 @@ export const JointJSClass = joint.dia.Element.define(
                         newAttrs[`attribute-multiplicity-${index}`] = { text: ` ${multiplicityString}`, ...lineAttrs };
                     }
 
-                    const identifierString = attribute.identifier ? attribute.identifier.value.toString() : "";
+                    const identifierString = "";
+                    // const identifierString = attribute.identifiers ? attribute.identifiers.value.toString() : "";
                     if (identifierString) {
                         newAttrs[`attribute-id-${index}`] = { text: ` ${identifierString}`, fontStyle: "italic", ...lineAttrs };
                     }
+                    // console.log(attribute.identifiers)
                 } else {
                     newAttrs[`attribute-text-${index}`] = { text: attribute, ...lineAttrs, ...ERROR_ATTRS };
                 }
