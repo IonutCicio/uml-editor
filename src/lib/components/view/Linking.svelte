@@ -2,95 +2,196 @@
     import * as joint from "@joint/core";
     import { graph, paper, snapSizeToClosest } from "$lib/utils";
     import { JointJSAssociation } from "../JointJS/JointJSAssociation";
+    import { JointJSClass } from "../JointJS/JointJSClass";
+    import { conf } from "$lib";
+    import { get } from "svelte/store";
 
-    // State to hold the source element details during the two-step click process
+    let isInLinkingState: boolean = false;
+    let tempPedingSource: any = null;
     let pendingSource: any = null;
-    let tempLink: any = null;
+    let tempLink: joint.shapes.standard.Link | null = null;
 
-    function handleMouseMove(evt) {
-        if (!tempLink) return;
-        const p = paper.clientToLocalPoint({ x: evt.clientX, y: evt.clientY });
-        tempLink.target({
-            x: snapSizeToClosest(p.x),
-            y: snapSizeToClosest(p.y),
-        });
-    }
+    function getClosestClass(x: number, y: number): joint.dia.Element | null {
+        const point = new joint.g.Point(x, y);
 
-    paper.el.addEventListener("contextmenu", (evt) => evt.preventDefault());
+        let closestElement = null;
+        let minDistance = Infinity;
 
-    paper.on("element:contextmenu", function (elementView, evt, x, y) {
-        evt.preventDefault();
+        graph
+            .getElements()
+            .filter((el) => el instanceof JointJSClass)
+            .forEach((el) => {
+                const distance = point.distance(
+                    el.getBBox().pointNearestToPoint(point),
+                );
 
-        // TODO: WHY NOT LOOK FOR THE CLOSEST OBJECT? Like, the closest point to the closest object????
-        const element = elementView.model;
-        const bbox = element.getBBox();
-
-        const dTop = Math.abs(y - bbox.y);
-        const dBottom = Math.abs(bbox.y + bbox.height - y);
-        const dLeft = Math.abs(x - bbox.x);
-        const dRight = Math.abs(bbox.x + bbox.width - x);
-
-        const min = Math.min(dTop, dBottom, dLeft, dRight);
-
-        let dx = Math.min(
-            bbox.width,
-            Math.max(snapSizeToClosest(x) - bbox.x, 0),
-        );
-        let dy = Math.min(
-            bbox.height,
-            Math.max(snapSizeToClosest(y) - bbox.y, 0),
-        );
-
-        if (dTop == min) {
-            dy = 0;
-        } else if (dBottom == min) {
-            dy = bbox.height;
-        } else if (dLeft == min) {
-            dx = 0;
-        } else {
-            dx = bbox.width;
-        }
-
-        if (!pendingSource) {
-            pendingSource = {
-                id: element.id,
-                dx: dx,
-                dy: dy,
-            };
-
-            console.log("x, y", x, y);
-            console.log("~x, ~y", snapSizeToClosest(x), snapSizeToClosest(y));
-            tempLink = new joint.shapes.standard.Link({
-                source: {
-                    id: pendingSource.id,
-                    anchor: {
-                        name: "topLeft",
-                        args: { dx: pendingSource.dx, dy: pendingSource.dy },
-                    },
-                },
-                target: { x: snapSizeToClosest(x), y: snapSizeToClosest(y) },
-                attrs: {
-                    root: {
-                        pointerEvents: "none",
-                    },
-                },
+                if (distance < minDistance) {
+                    minDistance = distance;
+                    closestElement = el;
+                }
             });
 
-            tempLink.addTo(graph);
-            document.addEventListener("mousemove", handleMouseMove);
-            elementView.highlight();
-        } else {
-            const targetDx = dx;
-            const targetDy = dy;
+        return closestElement;
+    }
 
-            document.removeEventListener("mousemove", handleMouseMove);
-            if (tempLink) {
-                tempLink.remove();
-                tempLink = null;
+    // TODO: use undefined
+    let mouseFunc = function (event: MouseEvent): void {
+        if (!isInLinkingState) {
+            return;
+        }
+
+        if (tempLink) {
+            tempLink.remove();
+            tempLink = null;
+        }
+
+        let mouseLocalPoint = paper.clientToLocalPoint({
+            x: event.clientX || 0,
+            y: event.clientY || 0,
+        });
+
+        let localPoint = paper.clientToLocalPoint({
+            x: event.clientX || 0,
+            y: event.clientY || 0,
+        });
+
+        const closestObj = getClosestClass(localPoint.x, localPoint.y);
+
+        if (!closestObj) {
+            return;
+        }
+
+        const objectCell = graph.getCell(closestObj);
+
+        let x1 = objectCell.getBBox().x;
+        let y1 = objectCell.getBBox().y;
+        let width1 = objectCell.getBBox().width;
+        let height1 = objectCell.getBBox().height;
+
+        let points = [];
+        for (let x = x1; x <= x1 + width1; x += get(conf).gridSize) {
+            points.push([x, y1]);
+            points.push([x, y1 + height1]);
+        }
+
+        for (
+            let y = y1 + get(conf).gridSize;
+            y < y1 + height1;
+            y += get(conf).gridSize
+        ) {
+            points.push([x1, y]);
+            points.push([x1 + width1, y]);
+        }
+
+        function distance(
+            x1: number,
+            y1: number,
+            x2: number,
+            y2: number,
+        ): number {
+            return Math.sqrt(Math.pow(x1 - x2, 2) + Math.pow(y1 - y2, 2));
+        }
+
+        let [closestX, closestY] = points.reduce(([minX, minY], [x, y]) =>
+            distance(minX, minY, mouseLocalPoint.x, mouseLocalPoint.y) <
+            distance(x, y, mouseLocalPoint.x, mouseLocalPoint.y)
+                ? [minX, minY]
+                : [x, y],
+        );
+
+        let direction = "top";
+
+        if (closestX === x1) {
+            direction = "left";
+        } else if (closestX === x1 + width1) {
+            direction = "right";
+        } else if (closestY === y1) {
+            direction = "top";
+        } else if (closestY === y1 + height1) {
+            direction = "bottom";
+        }
+
+        let dx: number = closestX - x1;
+        let dy: number = closestY - y1;
+
+        tempPedingSource = {
+            id: closestObj.id,
+            direction,
+            dx,
+            dy,
+        };
+
+        let endDirection = "top";
+        if (tempPedingSource.direction === "top") {
+            endDirection = "bottom";
+        } else if (tempPedingSource.direction === "bottom") {
+            endDirection = "top";
+        } else if (tempPedingSource.direction === "left") {
+            endDirection = "right";
+        } else if (tempPedingSource.direction === "right") {
+            endDirection = "left";
+        }
+
+        tempLink = new joint.shapes.standard.Link({
+            // tempLink = new JointJSAssociation({
+            source: {
+                id: pendingSource ? pendingSource.id : tempPedingSource.id,
+                anchor: {
+                    name: "topLeft",
+                    args: pendingSource
+                        ? { dx: pendingSource.dx, dy: pendingSource.dy }
+                        : { dx: tempPedingSource.dx, dy: tempPedingSource.dy },
+                },
+            },
+            target: pendingSource
+                ? {
+                      id: tempPedingSource.id,
+                      anchor: {
+                          name: "topLeft",
+                          args: {
+                              dx: tempPedingSource.dx,
+                              dy: tempPedingSource.dy,
+                          },
+                      },
+                  }
+                : {
+                      x: snapSizeToClosest(mouseLocalPoint.x),
+                      y: snapSizeToClosest(mouseLocalPoint.y),
+                  },
+            router: {
+                name: "manhattan",
+                args: {
+                    startDirections: [
+                        pendingSource
+                            ? pendingSource.direction
+                            : tempPedingSource.direction,
+                    ],
+                    endDirections: pendingSource
+                        ? [tempPedingSource.direction]
+                        : [endDirection],
+                },
+            },
+            attrs: {
+                root: {
+                    pointerEvents: "none",
+                },
+            },
+        });
+
+        tempLink.addTo(graph);
+    };
+
+    paper.on(
+        "blank:pointerdown",
+        function (event: joint.dia.Event, x: number, y: number): void {
+            if (!isInLinkingState) {
+                return;
             }
 
-            const sourceView = paper.findViewByModel(pendingSource.id);
-            if (sourceView) sourceView.unhighlight();
+            if (!pendingSource) {
+                pendingSource = tempPedingSource;
+                return;
+            }
 
             const link = new JointJSAssociation({
                 source: {
@@ -101,34 +202,60 @@
                     },
                 },
                 target: {
-                    id: element.id,
+                    id: tempPedingSource.id,
                     anchor: {
                         name: "topLeft",
-                        args: { dx: targetDx, dy: targetDy },
+                        args: {
+                            dx: tempPedingSource.dx,
+                            dy: tempPedingSource.dy,
+                        },
                     },
                 },
                 router: {
                     name: "manhattan",
                     args: {
-                        // TODO: this must be computed!
-                        startDirections: ["top"],
-                        endDirections: ["bottom"],
+                        startDirections: [pendingSource.direction],
+                        endDirections: [tempPedingSource.direction],
                     },
                 },
             });
 
             link.addTo(graph);
-
-            pendingSource = null;
-        }
-    });
-
-    paper.on("blank:contextmenu", function (evt) {
-        evt.preventDefault();
-        if (pendingSource) {
-            const sourceView = paper.findViewByModel(pendingSource.id);
-            if (sourceView) sourceView.unhighlight();
-            pendingSource = null;
-        }
-    });
+            // TODO: otherwise, just create a link!
+        },
+    );
 </script>
+
+<svelte:window
+    onkeydown={function (event: KeyboardEvent): void {
+        if (event.key == "Escape") {
+            if (tempLink) {
+                tempLink.remove();
+                tempLink = null;
+            }
+
+            return;
+        }
+
+        if (
+            event.target instanceof HTMLElement &&
+            (event.target.tagName === "INPUT" ||
+                event.target.tagName === "TEXTAREA" ||
+                event.target.isContentEditable)
+        ) {
+            return;
+        }
+
+        isInLinkingState = event.shiftKey;
+    }}
+    onkeyup={function (_event: KeyboardEvent): void {
+        isInLinkingState = false;
+        if (tempLink) {
+            tempLink.remove();
+            tempLink = null;
+            pendingSource = null;
+            tempPedingSource = null;
+        }
+    }}
+    onmousemove={mouseFunc}
+/>

@@ -56,7 +56,7 @@ export const paper: joint.dia.Paper = new joint.dia.Paper({
     defaultRouter: {
         name: "manhattan",
         args: {
-            padding: 20,
+            // padding: 20,
         }
     },
     interactive: {

@@ -222,12 +222,13 @@
 
 <svelte:window
     onkeydown={function (event: KeyboardEvent) {
-        manualSelectionMode = event.shiftKey || event.ctrlKey;
+        // manualSelectionMode = event.shiftKey || event.ctrlKey;
+        manualSelectionMode = event.ctrlKey;
 
         // temporary fix, there might be a better alternative
         const target = event.target as HTMLElement;
 
-        const isEditing =
+        const isEditing: boolean =
             target instanceof HTMLInputElement ||
             target instanceof HTMLTextAreaElement ||
             target.isContentEditable;
@@ -252,7 +253,7 @@
             return;
         }
     }}
-    onkeyup={function (_event: KeyboardEvent) {
+    onkeyup={function (_event: KeyboardEvent): void {
         manualSelectionMode = false;
     }}
 />
