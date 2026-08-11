@@ -211,3 +211,4 @@ You can preview the production build with `npm run preview`.
           generalization line) .
     - [ ] When you first place the link, it is not placed very well, it should
       be immediately straightened somehow...
+    - [ ] User right click to inspect stuff! This solves any and all problems!

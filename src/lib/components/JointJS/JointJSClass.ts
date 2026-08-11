@@ -1,6 +1,6 @@
 import { type IUMLClass, } from '$lib/types/uml';
 import { graph, snapSize, measureText } from '$lib/utils';
-import { Attribute, conf, UMLClass } from '$lib';
+import { Attribute, conf, Multiplicity, UMLClass } from '$lib';
 import { get } from 'svelte/store';
 import * as joint from '@joint/core';
 
@@ -54,8 +54,8 @@ export const JointJSClass = joint.dia.Element.define(
         },
 
         update: function(this: IUMLClass) {
-            const umlClassResult = UMLClass.fromString(this.get('definition'));
-            const umlClass = umlClassResult.value;
+            const umlClass = UMLClass.fromString(this.get('definition'));
+            // const umlClass = umlClassResult.value;
 
             const attrs: Record<string, any> = {};
             const markup: joint.dia.MarkupJSON = [
@@ -68,9 +68,10 @@ export const JointJSClass = joint.dia.Element.define(
             let minWidth = this.size().width;
             let currentY = 0;
 
-            attrs["name"] = { text: umlClass.name };
+            // TODO: also change the height! if the name has more than 1 line! Like, abstract!
+            attrs["name"] = { text: umlClass.name.value };
 
-            minWidth = Math.max(minWidth, measureText(umlClass.name || 'Class') + get(conf).gridSize)
+            minWidth = Math.max(minWidth, measureText(umlClass.name.value) + get(conf).gridSize)
             currentY += get(conf).gridSize * 2;
 
             attrs["divider1"] = {
@@ -88,7 +89,7 @@ export const JointJSClass = joint.dia.Element.define(
                 currentY += get(conf).gridSize * 2;
             }
 
-            umlClass.attributes.forEach(({ value: attribute, error }, index) => {
+            umlClass.attributes.forEach((attribute, index) => {
                 minWidth = Math.max(minWidth, measureText(attribute.toString()) + get(conf).gridSize);
 
                 const lineAttrs = { y: currentY + get(conf).gridSize, ...TEXT_ATTRS };
@@ -98,10 +99,15 @@ export const JointJSClass = joint.dia.Element.define(
                 const newAttrs: Record<string, any> = {};
 
                 if (attribute instanceof Attribute) {
-                    newAttrs[`attribute-name-${index}`] = { text: `${attribute.name}: `, ...lineAttrs }; // TODO: handle errors / warnings;
-                    newAttrs[`attribute-type-${index}`] = { text: attribute.type, fontWeight: 400, ...lineAttrs }; // TODO: handle errors;
+                    newAttrs[`attribute-name-${index}`] = { text: `${attribute.name.value}: `, ...lineAttrs }; // TODO: handle errors / warnings;
+                    newAttrs[`attribute-type-${index}`] = { text: attribute.type.value, fontWeight: 400, ...lineAttrs }; // TODO: handle errors;
 
-                    const multiplicityString = attribute.multiplicity.value.toString();
+                    const multiplicityString = (
+                        attribute.multiplicity instanceof Multiplicity ?
+                            attribute.multiplicity :
+                            attribute.multiplicity.value
+                    ).toString();
+
                     if (multiplicityString) {
                         newAttrs[`attribute-multiplicity-${index}`] = { text: ` ${multiplicityString}`, ...lineAttrs };
                     }

@@ -133,9 +133,13 @@
             }[event.key] || editorMode;
     }
 
-    paper.on("cell:pointerdblclick", function (cellView: joint.dia.CellView) {
-        inspectedCellView = cellView;
-    });
+    paper.on(
+        "cell:contextmenu",
+        function (cellView: joint.dia.CellView, event: joint.dia.Event): void {
+            event.preventDefault();
+            inspectedCellView = cellView;
+        },
+    );
 
     paper.on(
         "blank:pointerdblclick",
@@ -192,6 +196,7 @@
         class="absolute top-0 left-0 w-full h-full bg-black/20 grid place-items-center"
         role="dialog"
         tabindex="0"
+        oncontextmenu={(event) => event.preventDefault()}
     >
         <div
             class="bg-white rounded-md p-4"

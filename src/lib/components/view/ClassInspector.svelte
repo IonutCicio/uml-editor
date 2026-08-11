@@ -16,6 +16,10 @@
     let definition = $state(component.get("definition") || "");
 
     onDestroy(() => {
+        if (component.get("definition") === definition) {
+            return;
+        }
+
         component.set("definition", definition);
         component.update();
     });
@@ -36,7 +40,7 @@
     };
 </script>
 
-<div class="w-5xl flex flex-col align-middle gap-2">
+<div class="w-2xl flex flex-col align-middle gap-2">
     <div>
         <label for="definition" class="text-sm mb-1">Definition</label>
         <textarea
