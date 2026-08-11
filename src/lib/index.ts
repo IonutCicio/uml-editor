@@ -6,6 +6,21 @@ export const conf = writable({
     fontSize: 13
 });
 
+
+// TODO: some kind of reference? like... Class -> definition -> line 3 -> col 12? Also add line numbers in textarea for definition;
+// TODO: What do I want here? I want it to still work somehow... so "do it"
+// But I have to add erors, and reference the thing that created the error.
+// Ah, yeah! if it is an error, then just show the normal string!
+// And maybe a reference to the object id (which is generic and passed in from the tryFrom) Maybe optional?
+// The identifier is something like : "object id" + extra annotation on line and column?
+// TODO: there is no need to pass the id! You can just get the list of errors!
+// Then, the caller decides what to do with it!
+
+// TODO: after the tryFrom, map the result to a new one with the actual problematic line (or something like that)! Do it in UMLClass
+
+// TODO: make the regex more "flexible" (allow for invalid values), but give warnings / errors;
+// TODO: export type UnparsedString = string; or something, make it "package" constructor, and public read?
+
 // 3 options:
 // 1. Couldn't parse at all, so I give you the input string 
 // 2. Could parse, but there are some errors / warnings
@@ -52,7 +67,7 @@ const FMT_PASCAL_LAX: [RegExp, ErrString] = [/^(?:[A-Z][^A-Z]*)*$/, ""];
 function checkValue(value: string, diagnostics: [RegExp, ErrString][]): WeakResult<string, ErrString[]> {
     return {
         value,
-        error: diagnostics.filter(([regexp, _]) => regexp.test(value)).map(([_, diagnostic]) => diagnostic)
+        error: diagnostics.filter(([regexp, _]) => !regexp.test(value)).map(([_, diagnostic]) => diagnostic)
     };
 }
 
@@ -69,8 +84,12 @@ export class UMLClass {
 
         return new UMLClass(
             checkValue(class_name.trim(), [REQ, STR_ALPHANUMERIC, FMT_PASCAL]),
-            (attributes && /\S/.test(attributes) ? attributes.trim().split(/\n\s*/).map(Attribute.fromString) : []),
-            (operations && /\S/.test(operations) ? operations.trim().split(/\n\s*/).map(Operation.fromString) : [])
+            attributes && /\S/.test(attributes)
+                ? attributes.trim().split(/\n\s*/).map(Attribute.fromString)
+                : [],
+            operations && /\S/.test(operations)
+                ? operations.trim().split(/\n\s*/).map(Operation.fromString)
+                : []
         );
     }
 }
@@ -79,7 +98,7 @@ export class Attribute {
     private constructor(
         public readonly name: WeakResult<string, ErrString[]>,
         public readonly type: WeakResult<string, ErrString[]>,
-        public readonly multiplicity: WeakResult<Multiplicity, ErrString[]> | Multiplicity,
+        public readonly multiplicity: WeakResult<Multiplicity, ErrString[]>,
         public readonly identifiers: WeakResult<Identifier, ErrString>[],
     ) { }
 
@@ -105,22 +124,22 @@ export class Attribute {
         return new Attribute(
             checkValue(match[1].trim(), [REQ, STR_WORD, FMT_SNAKE]),
             checkValue(match[2].trim(), [REQ, FMT_PASCAL_LAX]),
-            match[3] ? Multiplicity.fromString(match[3]) : Multiplicity.DEFAULT,
-            match[4] ? Array.from(
-                match[4].matchAll(/\{([^\}]*)\}/gi),
-                (match) => Identifier.fromString(match[1])
-            ) : []
+            match[3]
+                ? Multiplicity.fromString(match[3])
+                : { value: Multiplicity.DEFAULT, error: [] },
+            match[4]
+                ? Array.from(
+                    match[4].matchAll(/\{([^\}]*)\}/gi),
+                    (match) => Identifier.fromString(match[1])
+                )
+                : []
         );
     }
 
     public toString(): string {
         return [
             [this.name.value, this.type.value].filter(Boolean).join(": "),
-            (
-                this.multiplicity instanceof Multiplicity ?
-                    this.multiplicity :
-                    this.multiplicity.value
-            ).toString(),
+            this.multiplicity.value.toString(),
             ...this.identifiers.map(({ value }) => value)
         ].filter(Boolean).join(" ");
     }
@@ -129,9 +148,9 @@ export class Attribute {
 export class Operation {
     private constructor(
         public readonly name: WeakResult<string, ErrString[]>,
-        public readonly parameters: (WeakResult<Parameter, string[]> | RawString)[],
+        public readonly parameters: (Parameter | RawString)[],
         public readonly type?: WeakResult<string, ErrString[]>,
-        public readonly multiplicity?: WeakResult<Multiplicity, ErrString[]> | Multiplicity,
+        public readonly multiplicity?: WeakResult<Multiplicity, ErrString[]>,
         public readonly identifiers?: WeakResult<Identifier, ErrString>[],
     ) {
     }
@@ -163,28 +182,37 @@ export class Operation {
 
         return new Operation(
             checkValue(match[1].trim(), [REQ, STR_WORD, FMT_SNAKE]),
-            (match[2] && /\S/.test(match[2]) ? match[2].trim().split(",").map(Parameter.fromString) : []),
-            match[3] ? checkValue(match[3], [REQ, FMT_PASCAL_LAX]) : undefined,
-            Multiplicity.DEFAULT
+            match[2] && /\S/.test(match[2])
+                ? match[2].trim().split(",").map(Parameter.fromString)
+                : [],
+            match[3]
+                ? checkValue(match[3].trim(), [REQ, FMT_PASCAL_LAX])
+                : undefined,
+            match[4]
+                ? Multiplicity.fromString(match[4])
+                : { value: Multiplicity.DEFAULT, error: [] },
+            match[5]
+                ? Array.from(
+                    match[5].matchAll(/\{([^\}]*)\}/gi),
+                    (match) => Identifier.fromString(match[1])
+                )
+                : undefined,
         );
     }
 
     public toString(): string {
-        //     const paramsStr = operation.parameters
-        //         ?.map((param) => `${param.name}: ${param.type}`)
-        //         .join(", ");
-        //
-        //     const paramsPart = paramsStr ? `(${paramsStr})` : "()";
-        //
-        //     let result = `${operation.name}${paramsPart} `;
-        //
-        //     if (operation.type) {
-        //         result += `: ${operation.type} `;
-        //     }
-        //
-        //     return result.trim();
-
-        return "";
+        return [
+            [
+                `${this.name.value}(${this.parameters.join(", ")})`,
+                [
+                    this.type?.value,
+                    this.multiplicity
+                        ? this.multiplicity.value.toString()
+                        : undefined,
+                    ...(this.identifiers ? this.identifiers.map(({ value }) => value) : [])
+                ].filter(Boolean).join(" ")
+            ].filter(Boolean).join(": "),
+        ].filter(Boolean).join("")
     }
 }
 
@@ -192,11 +220,30 @@ export class Parameter {
     private constructor(
         public readonly name: WeakResult<string, ErrString[]>,
         public readonly type: WeakResult<string, ErrString[]>,
-        public readonly multiplicity: WeakResult<Multiplicity, ErrString[]> | Multiplicity,
+        public readonly multiplicity: WeakResult<Multiplicity, ErrString[]>,
     ) { }
 
-    public static fromString(string: RawString): WeakResult<Parameter, ErrString[]> | RawString {
-        return string;
+    public static fromString(string: RawString): Parameter | RawString {
+        const match = /^([^:]*):([^\[]*)(?:\[([^\]]*)\]?)?$/.exec(string)
+
+        if (!match) {
+            return string;
+        }
+
+        return new Parameter(
+            checkValue(match[1].trim(), [REQ, STR_ALPHANUMERIC, FMT_SNAKE]),
+            checkValue(match[2].trim(), [REQ, FMT_PASCAL_LAX]),
+            match[3]
+                ? Multiplicity.fromString(match[3])
+                : { value: Multiplicity.DEFAULT, error: [] },
+        );
+    }
+
+    public toString(): string {
+        return [
+            [this.name.value, this.type.value].filter(Boolean).join(": "),
+            this.multiplicity.value.toString(),
+        ].filter(Boolean).join(" ");
     }
 }
 
@@ -209,9 +256,14 @@ export class Multiplicity {
     public static readonly DEFAULT: Multiplicity = new Multiplicity(1, 1);
 
     public static fromString(string: string): WeakResult<Multiplicity, string[]> {
-        let lowerString: string = "", upperString: string = "";
-        const lower: number = parseInt(lowerString);
-        const upper = upperString === "*" ? upperString : parseInt(upperString);
+        const match = /^(\d+)\.\.(\d+)$/.exec(string)
+        if (!match) {
+            // TODO: WeakResult | RawString, as match could fail; or try to make it infallible.
+            return { value: Multiplicity.DEFAULT, error: [] };
+        }
+
+        const lower: number = parseInt(match[1]);
+        const upper = match[2] === "*" ? match[2] : parseInt(match[2]);
 
         return {
             value: new Multiplicity(lower, upper),
@@ -231,15 +283,17 @@ export class Identifier {
     }
 
     public static fromString(string: string): WeakResult<Identifier, string> {
-        if (!string) {
+        const match = /^id(\d+)?$/.exec(string)
+
+        if (!match) {
             return { value: new Identifier(undefined), error: "" };
         }
 
-        const number = parseInt(string);
+        const number = match[1] ? parseInt(match[1]) : undefined;
 
         return {
             value: new Identifier(number),
-            error: number < 1 ? "Number must be > 0" : ""
+            error: number && number < 1 ? "Number must be > 0" : ""
         };
     }
 
@@ -247,385 +301,3 @@ export class Identifier {
         return `{id${this.number !== undefined ? this.number : ""}}`;
     }
 }
-
-
-// severity
-// diagnostic
-
-// export interface Diagnostic {
-//     readonly severity: DiagnosticSeverity;
-//     readonly message: string;
-// }
-// TODO: export type UnparsedString = string; or something, make it "package" constructor, and public read?
-// definition
-// unparsed
-// string
-// to
-// parse
-// validate(name, [EMPTY, ALPHANUMERIC, PASCAL_CASE]),
-
-// WeakResult -> <Value, Error[]>
-// HardResult -> Value | Error[]
-// HardResult<WeakResult<Value, Error[]> Error[]>
-// extractor + validator
-
-
-// export enum UMLClassError {
-//     MissingName,
-//     NameContainsInvalidCharacter,
-//     NameNotInPascalCase,
-// }
-// let error: UMLClassError | undefined = undefined;
-// error = UMLClassError.MissingName;
-// error = UMLClassError.NameNotInPascalCase;
-// error = UMLClassError.NameContainsInvalidCharacter;
-// { value: name, error: nameErrors },
-
-// if (!name) {
-//     nameErrors.push("Missing name.");
-// }
-//
-// if (!/[A-Za-z0-9]*/.test(name)) {
-//     nameErrors.push("Invalid characters.");
-// }
-//
-// if (!/^(?:[A-Z][a-z0-9]*)*$/.test(name)) {
-//     nameErrors.push("Expected PascalCase.");
-// }
-
-// type Validator<T, E> = (value: T) => E | null;
-//
-// // Generic helper to create validation rules
-// const createRule = <T, E>(
-//   predicate: (val: T) => boolean,
-//   error: E
-// ): Validator<T, E> =>
-//   (value) => (predicate(value) ? null : error);
-//
-// const regexRule = (pattern: RegExp, error: string) =>
-//   createRule<string, string>((val) => pattern.test(val), error);
-//
-// export const alphanumeric = regexRule(/^[a-zA-Z0-9]+$/, "Must be alphanumeric");
-// export const snakeCase = regexRule(/^[a-z0-9]+(_[a-z0-9]+)*$/, "Must be in snake_case");
-// export const pascalCase = regexRule(/^[A-Z][a-zA-Z0-9]*$/, "Must be in PascalCase");
-//
-// export const naturalNumber = createRule<number, string>(
-//   (n) => Number.isInteger(n) && n >= 0,
-//   "Must be a natural number (0 or greater)"
-// );
-//
-// export const nonZeroNaturalNumber = createRule<number, string>(
-//   (n) => Number.isInteger(n) && n > 0,
-//   "Must be a non-zero natural number"
-// );
-//
-// export function validate<T, E>(value: T, validators: Validator<T, E>[]): Result<T, E> {
-//   const errors = validators
-//     .map((validator) => validator(value))
-//     .filter((error): error is E => error !== null);
-//
-//   return errors.length === 0
-//     ? { success: true, value }
-//     : { success: false, errors };
-// }
-
-// /\S/.test(value)
-// Ah, maybe I can have an "enum", and to each value assign a "test" that takes an input, and gives out an error
-// if (!/[A-Za-z0-9]*/.test(name)) {
-//     nameErrors.push("Invalid characters.");
-// }
-//
-// if (!/^(?:[A-Z][a-z0-9]*)*$/.test(name)) {
-
-// .split(:)
-// .split([])
-// .split({})
-// 1
-// 2
-// 3
-// 4
-// match[3] && match[4] ?
-//     Multiplicity.fromString(match[3], match[4]) :
-//     { value: Multiplicity.DEFAULT, error: "" },
-
-
-
-// return { value: string, error: ["Invalid attribute syntax."] }
-// TODO: make the regex more "flexible" (allow for invalid values), but give warnings / errors;
-
-// name must be non empty
-// name and invalid characters
-// name must be in snake_case
-
-// type must be non empty
-// type must be PascalCase ? (not necessarily! It can contain extra stuff)
-
-// String.raw`^\s*`,
-// String.raw`([^\s:](?:[^:]*[^\s:])?)`,
-// String.raw`\s*:\s*`,
-// String.raw`([^\s\[\{](?:[^\[\{]*[^\s\[\{])?)`,
-// String.raw`(?:\s*\[(.*)\.\.(.*)\])?`,
-// String.raw`((?:\s*\{id[^}]*\})*)`,
-// String.raw`\s*$`,
-
-// String.raw`([^\s:](?:[^:]*[^\s:])?)`,
-// String.raw`\s*:\s*`,
-// String.raw`([^\s\[\{](?:[^\[\{]*[^\s\[\{])?)`,
-// String.raw`(?:\s*\[(.*)\.\.(.*)\])?`,
-// String.raw`((?:\s*\{id[^}]*\})*)`,
-// String.raw`\s*$`,
-
-// String.raw`(?:\s*\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\])?`,
-// String.raw`(\s*\{\s*id(\d*)\s*\})?`,
-// const match = /^([^\s:]+)\s*:\s*([^\[\{]*[^\s\[\{])(?:\s*\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\])?(\s*\{\s*id(\d*)\s*\})?$/.exec(string.trim());
-
-// console.log(match[5] ? Array.from(
-//     match[5].matchAll(/\{id([^}]*)\}/gi),
-//     (match) => match
-// ) : [])
-
-// match[5] ? Array.from(
-//     match[5].matchAll(/\b\{id([^{]*)\}\b/gi),
-//     ([match]) => Identifier.fromString(match[2])
-// ) : []
-// []
-// Identifier.fromString(match[6]) : undefined
-
-// TODO: some kind of reference? like... Class -> definition -> line 3 -> col 12? Also add line numbers in textarea for definition;
-
-
-// TODO: What do I want here? I want it to still work somehow... so "do it"
-// But I have to add erors, and reference the thing that created the error.
-// Ah, yeah! if it is an error, then just show the normal string!
-// And maybe a reference to the object id (which is generic and passed in from the tryFrom) Maybe optional?
-// The identifier is something like : "object id" + extra annotation on line and column?
-// TODO: there is no need to pass the id! You can just get the list of errors!
-// Then, the caller decides what to do with it!
-
-// editor
-// config
-
-// I can return either class or no class
-// I can either errors or no errors
-// Like, I could return the class, with the list of warnings.
-
-// TODO: after the tryFrom, map the result to a new one with the actual problematic line (or something like that)! Do it in UMLClass
-
-
-
-
-// const match = /^\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\]$/.exec(string);
-
-// if (!match) {
-//     return { value: string, error: "Invalid multiplicity syntax." };
-// }
-
-// if (upper !== "*" && lower > upper) {
-//     return { value: new Multiplicity(lower, upper), error: "Lower bound should be <= upper bound." }
-// }
-
-
-// const multiplicityString =
-//     attribute.multiplicity.lower === attribute.multiplicity.upper && attribute.multiplicity.lower == 1 ?
-//         "" :
-//         ` [${attribute.multiplicity.lower}..${attribute.multiplicity.upper}]`
-// export type Id = { enabled: false } | { enabled: true, number?: number };
-
-// const identifierString = "";
-// const identifierString =
-//     attribute.identifierEnabled ?
-//         ` {id${attribute.identifierNumber ? attribute.identifierNumber : ""}}`
-//         : "";
-// return this.value.enabled ? `{id${this.value.number ? this.value.number : ""}` : ""
-
-// private _value: Id = { enabled: false };
-
-// get value(): Id {
-//     return this._value;
-// }
-//
-// set value(value: Id) {
-//     this._validateIntGT1(value);
-//     this._value = this.value;
-// }
-
-// private _validateIntGT1(value: Id) {
-//     if (value.enabled && value.number != undefined) {
-//         if (!Number.isInteger(value.number)) {
-//             throw new Error();
-//         }
-//
-//         if (value.number < 1) {
-//             throw new Error();
-//         }
-//     }
-// }
-
-// lowerString: string, upperString: string
-
-// const match = /^([^\s:]+)\s*:\s*([^\s\[\{]+)(?:\s*\[\s*(\d+)\s*\.\.\s*(\d+|\*)\s*\])?(?:\s*\{\s*id(\d*)\s*\})?$/.exec(string.trim());
-// match[1] // name
-// match[2] // type
-// match[3] // multiplicity 
-// match[5] // id
-
-
-// private _lower: number = 1;
-// private _upper: number | "*" = 1;
-//
-// private _validateIntGEZ(value: number | "*") {
-//     if (value == "*") {
-//         return;
-//     }
-//
-//     if (!Number.isInteger(value)) {
-//         throw new Error()
-//     }
-//
-//     if (value < 0) {
-//         throw new Error();
-//     }
-// }
-//
-// private _validateBounds(lower: number, upper: number | "*") {
-//     if (upper !== "*" && upper < lower) {
-//         throw new Error();
-//     }
-// }
-
-
-// if (Number.isNaN(lower)) {
-//     return { value: `[${lowerString}..${upperString}]`, error: "Lower bound is not a number" }
-// }
-
-// Number.isInteger()
-
-// get lower(): number {
-//     return this._lower;
-// }
-//
-// set lower(value: number) {
-//     this._validateIntGEZ(value)
-//     this._validateBounds(value, this.upper)
-//
-//     this._lower = value;
-// }
-//
-// get upper(): number | "*" {
-//     return this._upper;
-// }
-//
-// set upper(value: number | "*") {
-//     this._validateIntGEZ(value)
-//     this._validateBounds(this.lower, value)
-//
-//     this._upper = value;
-// }
-
-
-
-// type Result<T, E> =
-//     | { ok: true; value: T }
-//     | { ok: false; error: E };
-//
-// export type TryFromResult<T, E> = {
-//     value: T | string;
-//     error: E;
-// };
-
-// export class String1 {
-//     private _value: string = "";
-//
-//     constructor(
-//         value: string
-//     ) {
-//         this.value = value;
-//     }
-//
-//     get value(): string {
-//         return this._value;
-//     }
-//
-//     set value(value: string) {
-//         if (!/^\S(.*\S)$/.test(value)) {
-//             throw new Error();
-//         }
-//
-//         this._value = value;
-//     }
-//
-//     toString(): string {
-//         return this.value;
-//     }
-//
-// }
-
-
-// export interface UMLAttribute {
-//     name: string,
-//     type: string,
-//     multiplicityLower: number
-//     multiplicityUpper: number | "*"
-//     identifierEnabled: boolean,
-//     identifierNumber?: number
-// }
-
-// export class UMLAttributeData {
-//     public type: String1 = new String1("Type")
-//     public multiplicity: Multiplicity = new Multiplicity()
-//     public identifier: Identifier = new Identifier()
-//
-//     toString(): string {
-//         return `: ${this.type.toString()}${this.multiplicity.toString()}${this.identifier.toString()}`;
-//     }
-// }
-
-// .split('\n')
-// .filter((string) => string.length > 0)
-// let attributes: TryFromResult<Attribute>[] = (attributesString || '')
-//     .split('\n')
-//     .filter((string) => string.length > 0)
-//     .map(Attribute.tryFrom);
-
-// let operations: Operation[] = (operationsString || '')
-//     .split('\n')
-//     .filter((string) => string.length > 0)
-//     .map((string) => {
-//     }) || [];
-
-
-//     return {
-//         name: "Unknown",
-//         parameters: [],
-//         type: 'Type',
-//         multiplicity: new Multiplicity()
-//     }
-// }
-
-// const parameters = ;
-//     (value) => {
-//     const [name, type] = value.split(":")
-//     return {
-//         name: name.trim(),
-//         type: type.trim(),
-//     }
-// }
-// )
-
-// return {
-//     name: match[1],
-//     parameters: parametersArr,
-//     type: match[3],
-//     multiplicity: new Multiplicity()
-// }
-
-
-// public toString(): string {
-//     return ''
-// }
-
-
-
-// export class UMLAssociation {
-//
-// }

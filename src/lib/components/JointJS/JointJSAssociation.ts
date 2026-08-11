@@ -19,7 +19,7 @@ export const JointJSAssociation = joint.dia.Link.define(
             line: {
                 connection: true,
                 stroke: "black",
-                strokeWidth: 2,
+                strokeWidth: 1,
                 fill: "none"
             },
             wrapper: {
@@ -115,7 +115,6 @@ export const JointJSAssociation = joint.dia.Link.define(
                         width: sourceLabelLength,
                         fill: "white",
                         stroke: "white",
-                        strokeWidth: 1,
                     }
                 },
                 position: sourceLabelPosition,
@@ -146,7 +145,6 @@ export const JointJSAssociation = joint.dia.Link.define(
                         width: targetLabelLength,
                         fill: "white",
                         stroke: "white",
-                        strokeWidth: 1,
                     }
                 },
                 position: -1 * targetLabelPosition

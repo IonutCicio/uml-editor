@@ -178,6 +178,18 @@
                 root: {
                     pointerEvents: "none",
                 },
+                line: {
+                    connection: true,
+                    stroke: "black",
+                    strokeWidth: 1,
+                    fill: "none",
+                    sourceMarker: null,
+                    targetMarker: null,
+                },
+                wrapper: {
+                    connection: true,
+                    strokeWidth: 20,
+                },
             },
         });
 
