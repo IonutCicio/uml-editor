@@ -20,10 +20,8 @@ const TEXT_ATTRS = {
     fill: 'black'
 }
 
-// TODO: also change the height! if the name has more than 1 line! Like, abstract!
 // TODO: handle errors / warnings;
 // TODO: make it more detailed, for [ ] too, and for () and for : (like operations and like that)
-// TODO: handle each parameter
 // TODO: get the anchors attached to this object, and take the minium of those heights / widths (dy, dx)...
 
 export const JointJSClass = joint.dia.Element.define(
@@ -40,7 +38,6 @@ export const JointJSClass = joint.dia.Element.define(
             },
             nameRect: {
                 refWidth: '100%',
-                height: get(conf).gridSize * 2,
                 fill: 'hsl(0, 0%, 95%)',
                 stroke: 'black',
                 strokeWidth: 2,
@@ -48,7 +45,6 @@ export const JointJSClass = joint.dia.Element.define(
             },
             name: {
                 refX: '50%',
-                y: get(conf).gridSize,
                 textAnchor: 'middle',
                 textVerticalAnchor: 'middle',
                 style: 'font-weight: 600 !important',
@@ -72,7 +68,6 @@ export const JointJSClass = joint.dia.Element.define(
 
         update: function(this: IUMLClass) {
             const umlClass = UMLClass.fromString(this.get('definition'));
-            // const umlClass = umlClassResult.value;
 
             const attrs: Record<string, any> = {};
             const markup: joint.dia.MarkupJSON = [
@@ -83,18 +78,30 @@ export const JointJSClass = joint.dia.Element.define(
             ];
 
             let minWidth = this.size().width;
-            let currentY = 0;
+            let currentY = snapSize(
+                measureText(umlClass.name.value).height + get(conf).gridSize,
+                get(conf).gridSize * 2,
+                Math.ceil
+            );
 
-            attrs["name"] = { text: umlClass.name.value };
+            attrs["name"] = {
+                text: umlClass.name.value,
+                y: currentY / 2,
+            };
 
-            minWidth = Math.max(minWidth, measureText(umlClass.name.value || 'Class') + get(conf).gridSize)
-            currentY += get(conf).gridSize * 2;
+            attrs["nameRect"] = {
+                height: currentY,
+                stroke: this.attr('body/stroke'),
+                strokeWidth: this.attr('body/strokeWidth'),
+            }
+
+            minWidth = Math.max(minWidth, measureText(umlClass.name.value || 'Class').width + get(conf).gridSize)
             if (umlClass.attributes.length === 0 && umlClass.operations.length === 0) {
                 currentY += get(conf).gridSize * 2;
             }
 
             umlClass.attributes.forEach((attribute, index) => {
-                minWidth = Math.max(minWidth, measureText(attribute.toString()) + get(conf).gridSize);
+                minWidth = Math.max(minWidth, measureText(attribute.toString()).width + get(conf).gridSize);
 
                 const lineAttrs = { y: currentY + get(conf).gridSize, ...TEXT_ATTRS };
 
@@ -162,7 +169,7 @@ export const JointJSClass = joint.dia.Element.define(
             };
 
             umlClass.operations.forEach((operation, index) => {
-                minWidth = Math.max(minWidth, measureText(operation.toString()) + get(conf).gridSize);
+                minWidth = Math.max(minWidth, measureText(operation.toString()).width + get(conf).gridSize);
 
                 const lineAttrs = { y: currentY + get(conf).gridSize, ...TEXT_ATTRS };
 

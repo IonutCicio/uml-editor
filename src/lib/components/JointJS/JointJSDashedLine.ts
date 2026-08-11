@@ -67,7 +67,7 @@ export const JointJSDashedLine = joint.dia.Link.define(
 
         update: function(this: IUMLLink) {
             const name = this.get("name") || "link";
-            const nameLabelLength = lengthToGridEven(measureText(name));
+            const nameLabelLength = lengthToGridEven(measureText(name).width);
 
             this.label(0, {
                 attrs: {

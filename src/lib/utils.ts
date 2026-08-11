@@ -9,8 +9,8 @@ import { JointJSInstanceOf } from "./components/JointJS/JointJSInstanceOf";
 import { JointJSLink } from "./components/JointJS/JointJSLink";
 import { JointJSNote } from "./components/JointJS/JointJSNote";
 import { writable } from 'svelte/store';
-import { JointJSObject } from "./components/JointJS/JointJSObject";
-import { JointJSUseCase } from "./components/JointJS/JointJSUseCase";
+// import { JointJSObject } from "./components/JointJS/JointJSObject";
+// import { JointJSUseCase } from "./components/JointJS/JointJSUseCase";
 import { JointJSDashedLine } from "./components/JointJS/JointJSDashedLine";
 
 const cellNamespace = {
@@ -23,8 +23,8 @@ const cellNamespace = {
         JointJSInstanceOf,
         JointJSLink,
         JointJSNote,
-        JointJSObject,
-        JointJSUseCase,
+        // JointJSObject,
+        // JointJSUseCase,
         JointJSDashedLine,
     },
 };
@@ -221,8 +221,16 @@ const canvas = document.createElement('canvas');
 const ctx = canvas.getContext('2d')!;
 ctx.font = `${get(conf).fontSize}px "Cascadia Code"`;
 
-export function measureText(text: string): number {
-    return ctx.measureText(text).width;
+export interface TextDimensions {
+    width: number;
+    height: number;
+}
+
+export function measureText(text: string): TextDimensions {
+    return {
+        width: ctx.measureText(text).width,
+        height: text.split("\n").length * get(conf).fontSize * 1.2,
+    }
 }
 
 export function exportSVG() {

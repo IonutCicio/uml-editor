@@ -19,9 +19,10 @@
     import AssociationInspector from "./view/AssociationInspector.svelte";
     import { onMount } from "svelte";
     import { JointJSActor } from "./JointJS/JointJSActor";
-    import { JointJSUseCase } from "./JointJS/JointJSUseCase";
-    import { JointJSObject } from "./JointJS/JointJSObject";
+    // import { JointJSUseCase } from "./JointJS/JointJSUseCase";
+    // import { JointJSObject } from "./JointJS/JointJSObject";
     import Linking from "./view/Linking.svelte";
+    import PropertyInspector from "./view/PropertyInspector.svelte";
 
     let paperElement: HTMLElement;
 
@@ -147,12 +148,12 @@
             event.preventDefault();
             let obj;
 
-            if (editorMode === EditorMode.Object) {
-                obj = new JointJSObject();
-            } else if (editorMode === EditorMode.Actor) {
+            // if (editorMode === EditorMode.Object) {
+            // obj = new JointJSObject();
+            if (editorMode === EditorMode.Actor) {
                 obj = new JointJSActor();
-            } else if (editorMode === EditorMode.UseCase) {
-                obj = new JointJSUseCase();
+                // } else if (editorMode === EditorMode.UseCase) {
+                // obj = new JointJSUseCase();
             } else if (editorMode === EditorMode.Note) {
                 obj = new JointJSNote();
             } else {
@@ -187,7 +188,21 @@
     <Toolbar bind:editorMode />
 
     <div class="relative w-full h-full">
-        <div id="paper" class="w-full h-full" bind:this={paperElement}></div>
+        {#if selectedCellViews.length > 0}
+            <div
+                class="absolute top-0 left-0 z-10 w-min h-full bg-white border-r border-gray-300"
+            >
+                <PropertyInspector cellViews={selectedCellViews} />
+            </div>
+        {/if}
+
+        <div class="relative w-full h-full">
+            <div
+                id="paper"
+                class="w-full h-full"
+                bind:this={paperElement}
+            ></div>
+        </div>
     </div>
 </div>
 
@@ -199,7 +214,7 @@
         oncontextmenu={(event) => event.preventDefault()}
     >
         <div
-            class="bg-white rounded-md p-4"
+            class="bg-white rounded-md p-6"
             use:clickOutside={(e) => (inspectedCellView = undefined)}
         >
             {#if inspectedCellView.model instanceof JointJSClass}
@@ -372,12 +387,6 @@
 <!---->
 <!-- // selectedCellViews = []; -->
 <!---->
-
-<!-- <div -->
-<!--     class="absolute top-0 left-0 w-min h-full bg-white border-r border-gray-300" -->
-<!-- > -->
-<!--     <PropertyInspector cellViews={selectedCellViews} /> -->
-<!-- </div> -->
 
 <!-- // graph.getElements().forEach((cell) => { -->
 <!-- //     if (cell instanceof JointJSClass) { -->

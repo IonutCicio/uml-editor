@@ -40,3 +40,7 @@ hr {
 code {
     @apply text-gray-400;
 }
+
+label {
+    @apply font-normal!;
+}

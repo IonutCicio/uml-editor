@@ -94,7 +94,7 @@ export const JointJSAssociation = joint.dia.Link.define(
             const router = this.router();
 
             const sourceMultiplicity = this.get("sourceMultiplicity");
-            const sourceLabelLength = snapSize(measureText(sourceMultiplicity), get(conf).gridSize * 2, Math.ceil)
+            const sourceLabelLength = snapSize(measureText(sourceMultiplicity).width, get(conf).gridSize * 2, Math.ceil)
 
             let sourceLabelPosition = 1;
             const sourceDirection = router?.args.startDirections[0];
@@ -123,7 +123,7 @@ export const JointJSAssociation = joint.dia.Link.define(
             // ----
 
             const targetMultiplicity = this.get("targetMultiplicity");
-            const targetLabelLength = lengthToGridEven(measureText(targetMultiplicity))
+            const targetLabelLength = lengthToGridEven(measureText(targetMultiplicity).width)
 
             let targetLabelPosition = 1;
             const targetDirection = router?.args.endDirections[0];
@@ -153,7 +153,7 @@ export const JointJSAssociation = joint.dia.Link.define(
             // ----
 
             const name = this.get("name");
-            const nameLabelLength = snapSize(measureText(name), get(conf).gridSize * 2, Math.ceil)
+            const nameLabelLength = snapSize(measureText(name).width, get(conf).gridSize * 2, Math.ceil)
 
             this.label(1, {
                 attrs: {

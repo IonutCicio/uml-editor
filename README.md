@@ -41,7 +41,7 @@ You can preview the production build with `npm run preview`.
     2. [ ] Association classes 
     3. [ ] Generalization creation 
     4. [ ] Validated UML (no two attributes with same name, no two classes with same name etc...)
-        1. [ ] For this, create a bar somewhere with a list of "warnings" and
+        - [ ] For this, create a bar somewhere with a list of "warnings" and
           errors. This is a global list (or set? for each error one could have
           a key, in order to not have duplicates somehow). This can contain
           both "object-specific warnings" (which are obtained from the graph),
@@ -51,7 +51,7 @@ You can preview the production build with `npm run preview`.
           object (technically not too hard to do! Just get the element from the
           graph).
     5. [x] "is identifier" isn't enough, you need to be able to specify an optional id number
-        1. [ ] Now that I think about it! An attribute can have a `list` of identifiers! Not just a "possible identifier"
+        - [x] Now that I think about it! An attribute can have a `list` of identifiers! Not just a "possible identifier"
     6. [ ] Add support for use-case diagram
     7. [ ] Add support for instances (links and objects), and arrows that connect instances to classes (dashed)
     8. [ ] Add support for packages! Allow nesting and stuff, and naming (top
@@ -64,6 +64,7 @@ You can preview the production build with `npm run preview`.
             references are autmatically similar (unless one sets a specific
             value for the style on some attribute)
     10. [ ] Add shared composition (aggregation and stuff) for design.
+    12. [ ] Add stereotypes handling (where? on association roles <<unique>>, class names <<abstract>>, <<enum>>) 
 3. [ ] Functionality
     1. [x] Import JSON
     2. [x] Export JSON
@@ -96,7 +97,8 @@ You can preview the production build with `npm run preview`.
     1. [x] Snap class dimensions to grid
         - [x] The `width` and `height` are multiples of `conf.gridSize * 2`
         - [x] The `width` is at least the length necessary to show the attributes / operations and at most the `width` choosen by the user (and snapped) 
-        - [x] The `width` and `height` are the least length necessary to keep all links on
+        - [x] The height depends on the size of the class name (if it has multiple rows)
+        - [ ] The `width` and `height` are the least length necessary to keep all links on
     2. [x] Icons tooltips
     3. [x] UI for selection 
         - [x] Bring selection rectangle to the foreground 
@@ -106,7 +108,7 @@ You can preview the production build with `npm run preview`.
     6. [x] Association delete button (or something) when association is selected (and is only one)
     7. [x] Add fixed points to associations (and generalizations)
     8. [ ] Create icon for project, change name to something nicer (rebranding) 
-        - [ ] The name part is done; i really like `uml-editor` (as `UML editor`).
+        - [x] The name part is done; i really like `uml-editor` (as `UML editor`).
     9. [x] Make `PropertyInspector` resizable (fix: made it float over the paper, and changes size based on content)
         - [ ] Now that I think about it, I want only "properties" on the
           property inspector (as in the "definition" of class, or the values of
@@ -212,4 +214,10 @@ You can preview the production build with `npm run preview`.
     - [ ] When you first place the link, it is not placed very well, it should
       be immediately straightened somehow...
     - [ ] User right click to inspect stuff! This solves any and all problems!
-    - [ ] Automatic formatting button for definitions (or something like that, maybe on shortcut? Ctrl + S, then change shortcut for saving JSON)
+    - [ ] Automatic formatting button for definitions text (or something like that, maybe on shortcut? Ctrl + S, then change shortcut for saving JSON)
+    - [ ] PropertyInspector
+        - [ ] Make a "color palette input" with default lighter colors! (should have label name, onclick event)
+        - [ ] Allow for changing the text color too!
+        - [ ] If all objects have the same fill color, or same stroke color,
+          choose that one as starting color
+    - [ ] Selection adds to currently selected cellviews, doesn't replace them (if Ctrl is pressed!)
