@@ -3,21 +3,18 @@
     import { JointJSClass } from "../JointJS/JointJSClass";
     import { JointJSAssociation } from "../JointJS/JointJSAssociation";
     import { JointJSGeneralization } from "../JointJS/JointJSGeneralization";
+    import ColorPicker from "./ColorPicker.svelte";
 
     const { cellViews }: { cellViews: joint.dia.CellView[] } = $props();
 
-    const strokeStyles = [
-        { name: "Solid Thick", value: "0" },
-        { name: "Dashed", value: "8 8" },
-        { name: "Long Dashed", value: "15 5" },
-        { name: "Dense Dashed", value: "20 2" },
-        { name: "Dotted", value: "2 5" },
-        { name: "Sparse Dotted", value: "2 10" },
-    ];
-
-    let fillColor = $state("");
-    let nameFillColor = $state("");
-    let strokeColor = $state("");
+    //const strokeStyles = [
+    //    { name: "Solid Thick", value: "0" },
+    //    { name: "Dashed", value: "8 8" },
+    //    { name: "Long Dashed", value: "15 5" },
+    //    { name: "Dense Dashed", value: "20 2" },
+    //    { name: "Dotted", value: "2 5" },
+    //    { name: "Sparse Dotted", value: "2 10" },
+    //];
 
     const strokeWidths = [1, 2, 3, 4, 5, 6, 7];
 
@@ -37,6 +34,29 @@
                     cellView.model instanceof JointJSGeneralization,
             ),
     );
+
+    let colorPickerFillOpen = $state(false);
+    let colorPickerNameFillOpen = $state(false);
+    let colorPickerStrokeOpen = $state(false);
+
+    const applyFillColor = (color: string) => {
+        for(const cellView of cellViews) {
+            cellView.model.attr("body/fill", color);
+        }
+    }
+
+    const applyNameFillColor = (color: string) => {
+        for(const cellView of cellViews) {
+            cellView.model.attr("nameRect/fill", color);
+        }
+    }
+
+    const applyStrokeColor = (color: string) => {
+        for(const cellView of cellViews) {
+            cellView.model.attr("body/stroke", color);
+        }
+    }
+
 </script>
 
 <div class="flex flex-col gap-2 p-4">
@@ -44,44 +64,51 @@
 
     {#if showFill}
         <label for="fillColor">Fill</label>
-        <input
-            id="fillColor"
-            type="color"
-            bind:value={fillColor}
-            oninput={() => {
-                for (const cellView of cellViews) {
-                    cellView.model.attr("body/fill", fillColor);
-                }
-            }}
-            class="w-8 h-8 cursor-pointer"
+        <button 
+            type="button" 
+            onclick={() => (colorPickerFillOpen = true)} 
+            aria-label="Open Fill Menu"
+        >
+            Color Picker
+        </button>
+
+        <ColorPicker
+            open={colorPickerFillOpen}
+            onSelect={applyFillColor}
+            onClose={() => (colorPickerFillOpen = false)}
         />
 
         <label for="nameFillColor">Name fill</label>
-        <input
-            id="nameFillColor"
-            type="color"
-            bind:value={nameFillColor}
-            oninput={() => {
-                for (const cellView of cellViews) {
-                    cellView.model.attr("nameRect/fill", nameFillColor);
-                }
-            }}
-            class="w-8 h-8 cursor-pointer"
+        <button 
+            type="button" 
+            onclick={() => (colorPickerNameFillOpen = true)} 
+            aria-label="Open Name Fill Menu"
+        >
+            Color Picker
+        </button>
+
+        <ColorPicker
+            open={colorPickerNameFillOpen}
+            onSelect={applyNameFillColor}
+            onClose={() => (colorPickerNameFillOpen = false)}
         />
+
     {/if}
 
     {#if showStroke}
         <label for="strokeColor">Stroke</label>
-        <input
-            id="strokeColor"
-            type="color"
-            bind:value={strokeColor}
-            oninput={() => {
-                for (const cellView of cellViews) {
-                    cellView.model.attr("body/stroke", strokeColor);
-                }
-            }}
-            class="w-8 h-8 cursor-pointer"
+        <button 
+            type="button" 
+            onclick={() => (colorPickerStrokeOpen = true)} 
+            aria-label="Open Fill Menu"
+        >
+            Color Picker
+        </button>
+
+        <ColorPicker
+            open={colorPickerStrokeOpen}
+            onSelect={applyStrokeColor}
+            onClose={() => (colorPickerStrokeOpen = false)}
         />
 
         <p class="text-sm font-medium! mb-1">Stroke width</p>
